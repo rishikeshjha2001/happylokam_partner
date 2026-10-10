@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "happylokam partner",
+    "slug": "happylokam-partner",
+    "version": "1.0.5",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "happylokampartner",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#070a12"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.happylokam.partner",
+      "buildNumber": "1"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0052FF"
+      },
+      "package": "com.happylokam.partner",
+      "versionCode": 7,
+      "navigationBar": {
+        "backgroundColor": "#0d1117",
+        "barStyle": "light-content"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-updates",
+        {
+          "username": "happylokam"
+        }
+      ]
+    ],
+    "updates": {
+      "url": "https://u.expo.dev/c1b2a3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c1b2a3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+      }
+    }
+  }
+}
