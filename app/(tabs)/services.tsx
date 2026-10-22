@@ -9,6 +9,7 @@ import {
   RefreshControl,
   StatusBar,
   BackHandler,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -301,6 +302,11 @@ export default function ServicesScreen() {
                   router.push({ pathname: '/service-details', params: { id: item.id } })
                 }
               >
+                {item.images && item.images.length > 0 ? (
+                  <View style={{ height: 130, width: '100%', marginBottom: 12, borderRadius: 10, overflow: 'hidden' }}>
+                    <Image source={{ uri: item.images[0] }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  </View>
+                ) : null}
                 <View style={styles.cardHeader}>
                   <View style={styles.cardHeaderLeft}>
                     <Text style={styles.serviceName}>{item.name}</Text>

@@ -294,7 +294,7 @@ export default function DashboardScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.serverActiveTitle}>⚡ HappyLokam Cloud Active</Text>
-              <Text style={styles.serverActiveSub}>₹99 Annual Server Charge Paid & Verified</Text>
+              <Text style={styles.serverActiveSub}>₹99 Monthly Server Charge Paid & Verified</Text>
             </View>
             <View style={styles.serverActiveBadge}>
               <Text style={styles.serverActiveBadgeText}>LIVE</Text>
@@ -526,13 +526,13 @@ export default function DashboardScreen() {
 
             {/* Price Hero */}
             <View style={styles.priceHero}>
-              <Text style={styles.priceHeroLabel}>ANNUAL CLOUD SERVER CHARGE</Text>
+              <Text style={styles.priceHeroLabel}>MONTHLY CLOUD SERVER CHARGE</Text>
               <View style={styles.priceHeroAmountRow}>
                 <Text style={styles.priceHeroSymbol}>₹</Text>
                 <Text style={styles.priceHeroNumber}>99</Text>
-                <Text style={styles.priceHeroPeriod}>/ year</Text>
+                <Text style={styles.priceHeroPeriod}>/ month</Text>
               </View>
-              <Text style={styles.priceHeroNote}>Direct activation for 12 months live cloud listing</Text>
+              <Text style={styles.priceHeroNote}>Direct activation for 30 days live cloud listing (Monthly)</Text>
             </View>
 
             {/* Feature List */}
