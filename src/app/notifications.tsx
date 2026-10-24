@@ -31,40 +31,7 @@ interface NotificationItem {
   isRead: boolean;
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'n1',
-    type: 'BOOKING',
-    title: 'New Booking Request! 🎉',
-    message: 'Pooja Reddy requested a booking for Grand Royal Ballroom on 18 Oct 2026 (₹92,250).',
-    time: '10 mins ago',
-    isRead: false,
-  },
-  {
-    id: 'n2',
-    type: 'REFERRAL',
-    title: 'Referral Bonus Credited! 💰',
-    message: '₹500 referral reward added to your wallet for referring Royal Caterers.',
-    time: '2 hours ago',
-    isRead: false,
-  },
-  {
-    id: 'n3',
-    type: 'APPROVAL',
-    title: 'Service Approved by Admin ✅',
-    message: 'Your service "Deluxe Multi-Cuisine Catering" has been verified and is now live.',
-    time: 'Yesterday',
-    isRead: true,
-  },
-  {
-    id: 'n4',
-    type: 'SYSTEM',
-    title: 'Welcome to Happylokam Partner 🚀',
-    message: 'Complete your business KYC and GST verification to unlock higher booking visibility.',
-    time: '3 days ago',
-    isRead: true,
-  },
-];
+const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);

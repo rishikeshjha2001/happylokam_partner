@@ -57,20 +57,7 @@ export default function BookingDetailsScreen() {
   useEffect(() => {
     (async () => {
       const bookings = await PartnerDatabase.getBookings();
-      const target = bookings.find((b) => b.id === params.id) || bookings[0] || {
-        id: 'bk-101',
-        userId: 'u1',
-        user: { name: 'Pooja Reddy', email: 'pooja.r@gmail.com', phone: '+91 98490 55443' },
-        venue: { name: 'Grand Royal Ballroom' },
-        date: '18 Oct 2026',
-        status: 'PENDING',
-        baseAmount: 75000,
-        platformFee: 3750,
-        taxAmount: 13500,
-        totalAmount: 92250,
-        ticketId: 'HLP-BKG-8891',
-        createdAt: new Date().toISOString(),
-      };
+      const target = bookings.find((b) => b.id === params.id) || bookings[0] || null;
       setBooking(target);
     })();
   }, [params.id]);

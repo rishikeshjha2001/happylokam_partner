@@ -72,42 +72,20 @@ export default function DashboardScreen() {
         return;
       }
 
-      // Default mock fallback
+      // Initial empty stats
       const defaultStats: DashboardStats = {
-        totalBookings: 18,
-        pendingBookings: 3,
-        completedBookings: 14,
-        cancelledBookings: 1,
-        totalServices: 6,
-        activeServices: 5,
-        totalRevenue: 142500,
-        monthlyRevenue: 38200,
+        totalBookings: 0,
+        pendingBookings: 0,
+        completedBookings: 0,
+        cancelledBookings: 0,
+        totalServices: 0,
+        activeServices: 0,
+        totalRevenue: 0,
+        monthlyRevenue: 0,
       };
-      const defaultBookings = [
-        {
-          id: 'bk-1',
-          user: { name: 'Pooja Reddy', email: 'pooja.r@gmail.com', phone: '+91 98490 55443' },
-          venue: { name: 'Grand Royal Ballroom' },
-          date: '2026-10-18',
-          status: 'PENDING',
-          totalAmount: 92250,
-          ticketId: 'HLP-BKG-8891',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 'bk-2',
-          user: { name: 'Sanjay Chowdary', email: 'sanjay.c@gmail.com', phone: '+91 97000 12345' },
-          venue: { name: 'Deluxe Multi-Cuisine Catering' },
-          date: '2026-10-24',
-          status: 'CONFIRMED',
-          totalAmount: 79950,
-          ticketId: 'HLP-BKG-8842',
-          createdAt: new Date().toISOString(),
-        },
-      ];
 
       setStats(defaultStats);
-      setRecentBookings(defaultBookings);
+      setRecentBookings([]);
 
       // Fast network fetch if live
       try {

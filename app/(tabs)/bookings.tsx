@@ -67,52 +67,7 @@ export default function BookingsScreen() {
       if (cached.length > 0) {
         setBookings(cached);
       } else {
-        const demoBookings: PartnerBooking[] = [
-          {
-            id: 'bk-1',
-            userId: 'usr-1',
-            user: { name: 'Pooja Reddy', email: 'pooja.r@gmail.com', phone: '+91 98490 55443' },
-            venue: { name: 'Grand Royal Ballroom' },
-            date: '2026-10-18',
-            status: 'PENDING',
-            baseAmount: 75000,
-            platformFee: 3750,
-            taxAmount: 13500,
-            totalAmount: 92250,
-            ticketId: 'HLP-BKG-8891',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'bk-2',
-            userId: 'usr-2',
-            user: { name: 'Sanjay Chowdary', email: 'sanjay.c@gmail.com', phone: '+91 97000 12345' },
-            venue: { name: 'Deluxe Multi-Cuisine Catering' },
-            date: '2026-10-24',
-            status: 'CONFIRMED',
-            baseAmount: 65000,
-            platformFee: 3250,
-            taxAmount: 11700,
-            totalAmount: 79950,
-            ticketId: 'HLP-BKG-8842',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'bk-3',
-            userId: 'usr-3',
-            user: { name: 'Divya Rao', email: 'divya.rao@gmail.com', phone: '+91 99887 76655' },
-            venue: { name: 'Royal Heritage Open Lawn' },
-            date: '2026-10-02',
-            status: 'COMPLETED',
-            baseAmount: 55000,
-            platformFee: 2750,
-            taxAmount: 9900,
-            totalAmount: 67650,
-            ticketId: 'HLP-BKG-8710',
-            createdAt: new Date().toISOString(),
-          },
-        ];
-        setBookings(demoBookings);
-        await PartnerDatabase.saveBookings(demoBookings);
+        setBookings([]);
       }
 
       // Fetch from API with timeout

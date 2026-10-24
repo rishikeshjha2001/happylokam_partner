@@ -39,48 +39,11 @@ interface Transaction {
   status: 'COMPLETED' | 'PENDING';
 }
 
-const SAMPLE_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-1',
-    type: 'CREDIT',
-    title: 'Booking Payout - Grand Ballroom',
-    subtitle: 'Customer: Pooja Reddy (BKG-8891)',
-    amount: 75000,
-    date: '18 Oct 2026',
-    status: 'COMPLETED',
-  },
-  {
-    id: 'tx-2',
-    type: 'REFERRAL',
-    title: 'Partner Referral Reward',
-    subtitle: 'Referred: Royal Caterers',
-    amount: 500,
-    date: '15 Oct 2026',
-    status: 'COMPLETED',
-  },
-  {
-    id: 'tx-3',
-    type: 'PAYOUT',
-    title: 'Bank Transfer Withdrawal',
-    subtitle: 'HDFC Bank (A/C **4589)',
-    amount: 50000,
-    date: '10 Oct 2026',
-    status: 'COMPLETED',
-  },
-  {
-    id: 'tx-4',
-    type: 'CREDIT',
-    title: 'Booking Advance - Catering Service',
-    subtitle: 'Customer: Sanjay Chowdary',
-    amount: 35000,
-    date: '05 Oct 2026',
-    status: 'COMPLETED',
-  },
-];
+const SAMPLE_TRANSACTIONS: Transaction[] = [];
 
 export default function WalletScreen() {
-  const [balance, setBalance] = useState(24500);
-  const [inEscrow, setInEscrow] = useState(65000);
+  const [balance, setBalance] = useState(0);
+  const [inEscrow, setInEscrow] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>(SAMPLE_TRANSACTIONS);
   const [filter, setFilter] = useState<'ALL' | 'CREDIT' | 'PAYOUT' | 'REFERRAL'>('ALL');
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
