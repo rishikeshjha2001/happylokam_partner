@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -20,6 +22,8 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react-native';
+import PartnerDatabase from '../services/partnerDatabase';
+import { PARTNER_API } from '../constants/api';
 import CustomAlert from '../components/CustomAlert';
 
 interface NotificationItem {
@@ -31,10 +35,10 @@ interface NotificationItem {
   isRead: boolean;
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
-
 export default function NotificationsScreen() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
   const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string }>({
     visible: false,
@@ -42,11 +46,82 @@ export default function NotificationsScreen() {
     message: '',
   });
 
-  const filtered = notifications.filter((n) => (filter === 'UNREAD' ? !n.isRead : true));
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const fetchNotifications = useCallback(async () => {
+    try {
+      // Load cached first
+      const cached = await PartnerDatabase.getNotifications();
+      if (cached && cached.length > 0) {
+        setNotifications(cached);
+      }
 
-  const markAllRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
+      const session = await PartnerDatabase.getSession();
+      if (session?.token) {
+        const res = await fetch(`${PARTNER_API}/notifications`, {
+          headers: { Authorization: `Bearer ${session.token}` },
+        });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const mapped: NotificationItem[] = json.data.map((pn: any) => {
+            const rawType = (pn.notification?.type || 'SYSTEM').toUpperCase();
+            let resolvedType: NotificationItem['type'] = 'SYSTEM';
+            if (rawType.includes('BOOK')) resolvedType = 'BOOKING';
+            else if (rawType.includes('OFFER') || rawType.includes('REF')) resolvedType = 'REFERRAL';
+            else if (rawType.includes('APP') || rawType.includes('REV')) resolvedType = 'APPROVAL';
+
+            const dateStr = pn.createdAt || pn.notification?.createdAt || new Date().toISOString();
+            return {
+              id: pn.id,
+              type: resolvedType,
+              title: pn.notification?.title || 'Partner Notification',
+              message: pn.notification?.message || '',
+              time: new Date(dateStr).toLocaleDateString('en-IN', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              isRead: Boolean(pn.isRead),
+            };
+          });
+
+          setNotifications(mapped);
+          await PartnerDatabase.saveNotifications(mapped);
+        }
+      }
+    } catch (e) {
+      console.log('Error fetching notifications:', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchNotifications();
+  };
+
+  const markAllRead = async () => {
+    const updated = notifications.map((n) => ({ ...n, isRead: true }));
+    setNotifications(updated);
+    await PartnerDatabase.saveNotifications(updated);
+
+    try {
+      const session = await PartnerDatabase.getSession();
+      if (session?.token) {
+        for (const item of notifications.filter((n) => !n.isRead)) {
+          fetch(`${PARTNER_API}/notifications/${item.id}/read`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${session.token}` },
+          }).catch(() => {});
+        }
+      }
+    } catch (e) {}
+
     setAlertConfig({
       visible: true,
       title: 'All Caught Up! ✨',
@@ -54,8 +129,26 @@ export default function NotificationsScreen() {
     });
   };
 
-  const clearAll = () => {
-    setNotifications([]);
+  const handleNotificationPress = async (item: NotificationItem) => {
+    if (!item.isRead) {
+      const updated = notifications.map((n) => (n.id === item.id ? { ...n, isRead: true } : n));
+      setNotifications(updated);
+      await PartnerDatabase.saveNotifications(updated);
+
+      try {
+        const session = await PartnerDatabase.getSession();
+        if (session?.token) {
+          fetch(`${PARTNER_API}/notifications/${item.id}/read`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${session.token}` },
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    if (item.type === 'BOOKING') router.push('/(tabs)/bookings');
+    else if (item.type === 'REFERRAL') router.push('/referrals');
+    else if (item.type === 'APPROVAL') router.push('/(tabs)/services');
   };
 
   const getIcon = (type: NotificationItem['type']) => {
@@ -114,8 +207,24 @@ export default function NotificationsScreen() {
       </View>
 
       {/* Notifications List */}
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {filtered.length === 0 ? (
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#60a5fa"
+            colors={['#60a5fa']}
+          />
+        }
+      >
+        {loading && notifications.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <ActivityIndicator size="large" color="#60a5fa" />
+            <Text style={[styles.emptySubtitle, { marginTop: 12 }]}>Loading business updates...</Text>
+          </View>
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Bell size={48} color="#334155" />
             <Text style={styles.emptyTitle}>No Notifications</Text>
@@ -127,14 +236,7 @@ export default function NotificationsScreen() {
               key={item.id}
               activeOpacity={0.85}
               style={[styles.notifCard, !item.isRead && styles.notifCardUnread]}
-              onPress={() => {
-                setNotifications(
-                  notifications.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
-                );
-                if (item.type === 'BOOKING') router.push('/(tabs)/bookings');
-                else if (item.type === 'REFERRAL') router.push('/referrals');
-                else if (item.type === 'APPROVAL') router.push('/(tabs)/services');
-              }}
+              onPress={() => handleNotificationPress(item)}
             >
               <View style={styles.iconBox}>{getIcon(item.type)}</View>
               <View style={styles.cardBody}>

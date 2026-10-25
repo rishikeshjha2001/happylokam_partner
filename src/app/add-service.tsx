@@ -119,11 +119,13 @@ export default function AddServiceScreen() {
         features: featureList,
       };
 
+      let savedService: PartnerServiceItem | null = null;
+
       if (session?.token) {
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 3000);
-          await fetch(`${PARTNER_API}/services`, {
+          const timer = setTimeout(() => controller.abort(), 8000);
+          const res = await fetch(`${PARTNER_API}/services`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -133,35 +135,63 @@ export default function AddServiceScreen() {
             signal: controller.signal,
           });
           clearTimeout(timer);
+          const json = await res.json();
+          if (json.success && json.data) {
+            const b = json.data;
+            savedService = {
+              id: b.id,
+              name: b.name || name.trim(),
+              category: b.category || category,
+              subCategory: b.subCategory || (subCategory.trim() || undefined),
+              description: b.description || description.trim(),
+              pricing: parseFloat(b.pricing || pricing),
+              pricingUnit: b.pricingUnit || pricingUnit,
+              capacity: b.capacity ? parseInt(b.capacity) : (capacity ? parseInt(capacity) : undefined),
+              images: b.images || [],
+              documents: b.documents || [],
+              features: b.features || featureList,
+              location: b.location || (location.trim() || 'Hyderabad'),
+              city: b.city || (city.trim() || 'Hyderabad'),
+              availability: b.availability || 'AVAILABLE',
+              status: b.status || 'PENDING',
+              rating: b.rating ? parseFloat(b.rating) : 5.0,
+              totalBookings: b.totalBookings || 0,
+              isActive: b.isActive !== false,
+              createdAt: b.createdAt || new Date().toISOString(),
+            };
+          }
         } catch (netErr) {
-          // Offline
+          // Offline fallback
         }
       }
 
       // Save locally
+      if (!savedService) {
+        savedService = {
+          id: 'srv-' + Date.now(),
+          name: name.trim(),
+          category,
+          subCategory: subCategory.trim() || undefined,
+          description: description.trim(),
+          pricing: parseFloat(pricing),
+          pricingUnit,
+          capacity: capacity ? parseInt(capacity) : undefined,
+          images: [],
+          documents: [],
+          features: featureList,
+          location: location.trim() || 'Hyderabad',
+          city: city.trim() || 'Hyderabad',
+          availability: 'AVAILABLE',
+          status: 'PENDING',
+          rating: 5.0,
+          totalBookings: 0,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+        };
+      }
+
       const existing = await PartnerDatabase.getServices();
-      const newService: PartnerServiceItem = {
-        id: 'srv-' + Date.now(),
-        name: name.trim(),
-        category,
-        subCategory: subCategory.trim() || undefined,
-        description: description.trim(),
-        pricing: parseFloat(pricing),
-        pricingUnit,
-        capacity: capacity ? parseInt(capacity) : undefined,
-        images: [],
-        documents: [],
-        features: featureList,
-        location: location.trim() || 'Hyderabad',
-        city: city.trim() || 'Hyderabad',
-        availability: 'AVAILABLE',
-        status: 'PENDING',
-        rating: 5.0,
-        totalBookings: 0,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      };
-      await PartnerDatabase.saveServices([newService, ...existing]);
+      await PartnerDatabase.saveServices([savedService, ...existing.filter((s) => s.id !== savedService!.id)]);
 
       setSubmitting(false);
       setAlertConfig({

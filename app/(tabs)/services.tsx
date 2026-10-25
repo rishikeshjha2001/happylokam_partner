@@ -9,7 +9,6 @@ import {
   RefreshControl,
   StatusBar,
   BackHandler,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -25,6 +24,7 @@ import {
   Users,
   Sparkles,
   ChevronRight,
+  Edit3,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { PARTNER_API } from '../../constants/api';
@@ -64,100 +64,32 @@ export default function ServicesScreen() {
   const fetchServices = useCallback(async () => {
     try {
       const session = await PartnerDatabase.getSession();
-      if (!session) return;
 
       const cached = await PartnerDatabase.getServices();
-      if (cached.length > 0) {
+      if (cached && cached.length > 0) {
         setServices(cached);
       } else {
-        const demoServices: PartnerServiceItem[] = [
-          {
-            id: 'srv-1',
-            name: 'Grand Royal Ballroom',
-            description:
-              'Central AC banquet hall with 800+ seating capacity, crystal chandeliers, stage setup and green rooms.',
-            category: 'Venue',
-            subCategory: 'AC Banquet Hall',
-            pricing: 75000,
-            pricingUnit: 'PER_EVENT',
-            capacity: 850,
-            images: [],
-            documents: [],
-            features: ['AC Hall', 'Stage Lighting', 'Valet Parking', 'Power Backup'],
-            location: 'Road No 36, Jubilee Hills',
-            city: 'Hyderabad',
-            availability: 'AVAILABLE',
-            status: 'APPROVED',
-            rating: 4.9,
-            totalBookings: 12,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'srv-2',
-            name: 'Royal Heritage Open Lawn',
-            description:
-              'Lush green open air lawn for destination weddings and reception celebrations under fairy lights.',
-            category: 'Venue',
-            subCategory: 'Open Lawn',
-            pricing: 55000,
-            pricingUnit: 'PER_EVENT',
-            capacity: 1200,
-            images: [],
-            documents: [],
-            features: ['Open Lawn', 'Gazebo Stage', 'Ample Parking', 'Fairy Lights'],
-            location: 'Financial District',
-            city: 'Hyderabad',
-            availability: 'AVAILABLE',
-            status: 'UNDER_REVIEW',
-            rating: 4.8,
-            totalBookings: 4,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'srv-3',
-            name: 'Deluxe Multi-Cuisine Catering',
-            description:
-              'Authentic South & North Indian live counters, tandoor, desserts and mocktail bar.',
-            category: 'Catering',
-            subCategory: 'Multi-Cuisine Buffet',
-            pricing: 650,
-            pricingUnit: 'PER_PLATE',
-            capacity: 1500,
-            images: [],
-            documents: [],
-            features: ['Live Counters', 'Tandoor', 'Dessert Bar', 'Mocktail Station'],
-            location: 'Hyderabad',
-            city: 'Hyderabad',
-            availability: 'AVAILABLE',
-            status: 'APPROVED',
-            rating: 5.0,
-            totalBookings: 8,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-          },
-        ];
-        setServices(demoServices);
-        await PartnerDatabase.saveServices(demoServices);
+        setServices([]);
       }
 
-      // Quick fetch from backend if connected
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 2500);
-        const res = await fetch(`${PARTNER_API}/services`, {
-          headers: { Authorization: `Bearer ${session.token}` },
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-        const json = await res.json();
-        if (json.success && json.data && json.data.length > 0) {
-          setServices(json.data);
-          await PartnerDatabase.saveServices(json.data);
+      if (session?.token) {
+        // Fetch from backend
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 3500);
+          const res = await fetch(`${PARTNER_API}/services`, {
+            headers: { Authorization: `Bearer ${session.token}` },
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          const json = await res.json();
+          if (json.success && json.data) {
+            setServices(json.data || []);
+            await PartnerDatabase.saveServices(json.data || []);
+          }
+        } catch (netErr) {
+          // Offline fallback
         }
-      } catch (netErr) {
-        // Offline
       }
     } catch (e) {
       console.log('Error in fetchServices:', e);
@@ -185,9 +117,18 @@ export default function ServicesScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            try {
+              const session = await PartnerDatabase.getSession();
+              if (session?.token && id) {
+                await fetch(`${PARTNER_API}/services/${id}`, {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${session.token}` },
+                }).catch(() => {});
+              }
+            } catch (err) {}
             const updated = services.filter((s) => s.id !== id);
             setServices(updated);
-            await PartnerDatabase.saveServices(updated);
+            await PartnerDatabase.deleteService(id);
           },
         },
       ],
@@ -302,11 +243,6 @@ export default function ServicesScreen() {
                   router.push({ pathname: '/service-details', params: { id: item.id } })
                 }
               >
-                {item.images && item.images.length > 0 ? (
-                  <View style={{ height: 130, width: '100%', marginBottom: 12, borderRadius: 10, overflow: 'hidden' }}>
-                    <Image source={{ uri: item.images[0] }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </View>
-                ) : null}
                 <View style={styles.cardHeader}>
                   <View style={styles.cardHeaderLeft}>
                     <Text style={styles.serviceName}>{item.name}</Text>
@@ -317,15 +253,26 @@ export default function ServicesScreen() {
                       </Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleDeleteService(item.id, item.name);
-                    }}
-                  >
-                    <Trash2 size={16} color="#ef4444" />
-                  </TouchableOpacity>
+                  <View style={styles.cardActionsRow}>
+                    <TouchableOpacity
+                      style={styles.cardEditBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        router.push({ pathname: '/edit-service', params: { id: item.id } });
+                      }}
+                    >
+                      <Edit3 size={15} color="#60a5fa" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteService(item.id, item.name);
+                      }}
+                    >
+                      <Trash2 size={15} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {item.description ? (
@@ -428,7 +375,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   addBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
-  scrollContent: { padding: 16, paddingBottom: 40 },
+  scrollContent: { padding: 16, paddingBottom: 120 },
   infoBanner: {
     flexDirection: 'row',
     gap: 12,
@@ -471,8 +418,17 @@ const styles = StyleSheet.create({
   cardHeaderLeft: { flex: 1 },
   serviceName: { fontSize: 17, fontWeight: '800', color: '#ffffff' },
   categoryBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  categoryText: { fontSize: 12, color: '#94a3b8', fontWeight: '600' },
-  deleteBtn: { padding: 6 },
+  cardActionsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardEditBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+  },
+  deleteBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
   serviceDesc: { fontSize: 13, color: '#94a3b8', marginTop: 8, lineHeight: 18 },
   cardMeta: {
     flexDirection: 'row',

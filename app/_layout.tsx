@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor="#070a12" />
       <Stack
         screenOptions={{
@@ -22,10 +23,11 @@ export default function RootLayout() {
         <Stack.Screen name="referrals" />
         <Stack.Screen name="add-service" />
         <Stack.Screen name="service-details" />
+        <Stack.Screen name="edit-service" />
         <Stack.Screen name="booking-details" />
         <Stack.Screen name="edit-profile" />
         <Stack.Screen name="settings" />
       </Stack>
-    </>
+    </SafeAreaProvider>
   );
 }

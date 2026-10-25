@@ -21,9 +21,7 @@ import {
   FileCheck,
   CheckCircle2,
   Building2,
-  Image as ImageIcon,
 } from 'lucide-react-native';
-import { Image } from 'react-native';
 import { PARTNER_API } from '../constants/api';
 import PartnerDatabase, { PartnerServiceItem } from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
@@ -40,14 +38,6 @@ const CATEGORIES = [
   'Other',
 ];
 
-const PRESET_PHOTOS = [
-  { label: 'Mandap', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Catering', url: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Banquet', url: 'https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Decor', url: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Shoot', url: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=800&q=80' },
-];
-
 const PRICING_UNITS = [
   { label: 'Per Event', value: 'PER_EVENT' },
   { label: 'Per Day', value: 'PER_DAY' },
@@ -57,8 +47,6 @@ const PRICING_UNITS = [
 
 export default function AddServiceScreen() {
   const [name, setName] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [subCategory, setSubCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -120,8 +108,6 @@ export default function AddServiceScreen() {
 
       const payload = {
         name: name.trim(),
-        title: name.trim(),
-        subtitle: subtitle.trim() || undefined,
         category: category.toUpperCase().replace(/\s+/g, '_'),
         subCategory: subCategory.trim() || undefined,
         description: description.trim(),
@@ -131,15 +117,15 @@ export default function AddServiceScreen() {
         city: city.trim() || 'Hyderabad',
         location: location.trim() || city.trim() || 'Hyderabad',
         features: featureList,
-        images: imageUrl.trim() ? [imageUrl.trim()] : [],
-        imageUrl: imageUrl.trim() || undefined,
       };
+
+      let savedService: PartnerServiceItem | null = null;
 
       if (session?.token) {
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 3000);
-          await fetch(`${PARTNER_API}/services`, {
+          const timer = setTimeout(() => controller.abort(), 8000);
+          const res = await fetch(`${PARTNER_API}/services`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -149,35 +135,63 @@ export default function AddServiceScreen() {
             signal: controller.signal,
           });
           clearTimeout(timer);
+          const json = await res.json();
+          if (json.success && json.data) {
+            const b = json.data;
+            savedService = {
+              id: b.id,
+              name: b.name || name.trim(),
+              category: b.category || category,
+              subCategory: b.subCategory || (subCategory.trim() || undefined),
+              description: b.description || description.trim(),
+              pricing: parseFloat(b.pricing || pricing),
+              pricingUnit: b.pricingUnit || pricingUnit,
+              capacity: b.capacity ? parseInt(b.capacity) : (capacity ? parseInt(capacity) : undefined),
+              images: b.images || [],
+              documents: b.documents || [],
+              features: b.features || featureList,
+              location: b.location || (location.trim() || 'Hyderabad'),
+              city: b.city || (city.trim() || 'Hyderabad'),
+              availability: b.availability || 'AVAILABLE',
+              status: b.status || 'PENDING',
+              rating: b.rating ? parseFloat(b.rating) : 5.0,
+              totalBookings: b.totalBookings || 0,
+              isActive: b.isActive !== false,
+              createdAt: b.createdAt || new Date().toISOString(),
+            };
+          }
         } catch (netErr) {
-          // Offline
+          // Offline fallback
         }
       }
 
       // Save locally
+      if (!savedService) {
+        savedService = {
+          id: 'srv-' + Date.now(),
+          name: name.trim(),
+          category,
+          subCategory: subCategory.trim() || undefined,
+          description: description.trim(),
+          pricing: parseFloat(pricing),
+          pricingUnit,
+          capacity: capacity ? parseInt(capacity) : undefined,
+          images: [],
+          documents: [],
+          features: featureList,
+          location: location.trim() || 'Hyderabad',
+          city: city.trim() || 'Hyderabad',
+          availability: 'AVAILABLE',
+          status: 'PENDING',
+          rating: 5.0,
+          totalBookings: 0,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+        };
+      }
+
       const existing = await PartnerDatabase.getServices();
-      const newService: PartnerServiceItem = {
-        id: 'srv-' + Date.now(),
-        name: name.trim(),
-        category,
-        subCategory: subCategory.trim() || subtitle.trim() || undefined,
-        description: description.trim(),
-        pricing: parseFloat(pricing),
-        pricingUnit,
-        capacity: capacity ? parseInt(capacity) : undefined,
-        images: imageUrl.trim() ? [imageUrl.trim()] : [],
-        documents: [],
-        features: featureList,
-        location: location.trim() || 'Hyderabad',
-        city: city.trim() || 'Hyderabad',
-        availability: 'AVAILABLE',
-        status: 'PENDING',
-        rating: 5.0,
-        totalBookings: 0,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      };
-      await PartnerDatabase.saveServices([newService, ...existing]);
+      await PartnerDatabase.saveServices([savedService, ...existing.filter((s) => s.id !== savedService!.id)]);
 
       setSubmitting(false);
       setAlertConfig({
@@ -226,7 +240,7 @@ export default function AddServiceScreen() {
           </View>
         </View>
 
-        {/* Name / Title */}
+        {/* Name */}
         <Text style={styles.label}>Service / Package Title *</Text>
         <TextInput
           style={styles.input}
@@ -235,56 +249,6 @@ export default function AddServiceScreen() {
           value={name}
           onChangeText={setName}
         />
-
-        {/* Subtitle */}
-        <Text style={styles.label}>Subtitle / Tagline</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Grand royal floral mandap with AC banquet"
-          placeholderTextColor="#64748b"
-          value={subtitle}
-          onChangeText={setSubtitle}
-        />
-
-        {/* Photo of Service */}
-        <Text style={styles.label}>Photo of Service (Image URL) *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. https://images.unsplash.com/... or paste image URL"
-          placeholderTextColor="#64748b"
-          value={imageUrl}
-          onChangeText={setImageUrl}
-        />
-
-        {/* Quick Preset Photos */}
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>Tap to select sample image:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-            {PRESET_PHOTOS.map((p) => (
-              <TouchableOpacity
-                key={p.label}
-                onPress={() => setImageUrl(p.url)}
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                  backgroundColor: imageUrl === p.url ? '#2563eb' : '#1e293b',
-                  borderWidth: 1,
-                  borderColor: imageUrl === p.url ? '#60a5fa' : '#334155',
-                }}
-              >
-                <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: '700' }}>{p.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Image Preview */}
-        {imageUrl.trim().length > 0 && (
-          <View style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#334155', height: 140 }}>
-            <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-          </View>
-        )}
 
         {/* Category */}
         <Text style={styles.label}>Category *</Text>

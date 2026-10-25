@@ -24,6 +24,7 @@ import {
   Users,
   Sparkles,
   ChevronRight,
+  Edit3,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { PARTNER_API } from '../../constants/api';
@@ -116,9 +117,18 @@ export default function ServicesScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            try {
+              const session = await PartnerDatabase.getSession();
+              if (session?.token && id) {
+                await fetch(`${PARTNER_API}/services/${id}`, {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${session.token}` },
+                }).catch(() => {});
+              }
+            } catch (err) {}
             const updated = services.filter((s) => s.id !== id);
             setServices(updated);
-            await PartnerDatabase.saveServices(updated);
+            await PartnerDatabase.deleteService(id);
           },
         },
       ],
@@ -243,15 +253,26 @@ export default function ServicesScreen() {
                       </Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleDeleteService(item.id, item.name);
-                    }}
-                  >
-                    <Trash2 size={16} color="#ef4444" />
-                  </TouchableOpacity>
+                  <View style={styles.cardActionsRow}>
+                    <TouchableOpacity
+                      style={styles.cardEditBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        router.push({ pathname: '/edit-service', params: { id: item.id } });
+                      }}
+                    >
+                      <Edit3 size={15} color="#60a5fa" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteService(item.id, item.name);
+                      }}
+                    >
+                      <Trash2 size={15} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {item.description ? (
@@ -397,8 +418,17 @@ const styles = StyleSheet.create({
   cardHeaderLeft: { flex: 1 },
   serviceName: { fontSize: 17, fontWeight: '800', color: '#ffffff' },
   categoryBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  categoryText: { fontSize: 12, color: '#94a3b8', fontWeight: '600' },
-  deleteBtn: { padding: 6 },
+  cardActionsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardEditBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+  },
+  deleteBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
   serviceDesc: { fontSize: 13, color: '#94a3b8', marginTop: 8, lineHeight: 18 },
   cardMeta: {
     flexDirection: 'row',

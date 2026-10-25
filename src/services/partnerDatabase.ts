@@ -119,7 +119,7 @@ class PartnerDatabase {
     return session?.token || null;
   }
 
-  // ---- Services ----
+  // ---- Services CRUD Helpers ----
   async saveServices(services: PartnerServiceItem[]): Promise<void> {
     await AsyncStorage.setItem(KEYS.SERVICES, JSON.stringify(services));
   }
@@ -129,6 +129,23 @@ class PartnerDatabase {
     return raw ? JSON.parse(raw) : [];
   }
 
+  async updateService(service: PartnerServiceItem): Promise<void> {
+    const existing = await this.getServices();
+    const index = existing.findIndex((s) => s.id === service.id);
+    if (index >= 0) {
+      existing[index] = service;
+    } else {
+      existing.unshift(service);
+    }
+    await this.saveServices(existing);
+  }
+
+  async deleteService(id: string): Promise<void> {
+    const existing = await this.getServices();
+    const filtered = existing.filter((s) => s.id !== id);
+    await this.saveServices(filtered);
+  }
+
   // ---- Bookings ----
   async saveBookings(bookings: PartnerBooking[]): Promise<void> {
     await AsyncStorage.setItem(KEYS.BOOKINGS, JSON.stringify(bookings));
@@ -136,6 +153,27 @@ class PartnerDatabase {
 
   async getBookings(): Promise<PartnerBooking[]> {
     const raw = await AsyncStorage.getItem(KEYS.BOOKINGS);
+    return raw ? JSON.parse(raw) : [];
+  }
+
+  async updateBooking(booking: PartnerBooking): Promise<void> {
+    const existing = await this.getBookings();
+    const index = existing.findIndex((b) => b.id === booking.id);
+    if (index >= 0) {
+      existing[index] = booking;
+    } else {
+      existing.unshift(booking);
+    }
+    await this.saveBookings(existing);
+  }
+
+  // ---- Notifications ----
+  async saveNotifications(notifications: any[]): Promise<void> {
+    await AsyncStorage.setItem(KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+  }
+
+  async getNotifications(): Promise<any[]> {
+    const raw = await AsyncStorage.getItem(KEYS.NOTIFICATIONS);
     return raw ? JSON.parse(raw) : [];
   }
 

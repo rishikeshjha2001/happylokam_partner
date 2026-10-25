@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import {
   ArrowLeft,
   Tag,
@@ -19,6 +19,7 @@ import {
   MapPin,
   Sparkles,
   Trash2,
+  Edit3,
   CheckCircle2,
   Clock,
   XCircle,
@@ -26,6 +27,7 @@ import {
   FileCheck,
 } from 'lucide-react-native';
 import PartnerDatabase, { PartnerServiceItem } from '../services/partnerDatabase';
+import { PARTNER_API } from '../constants/api';
 import CustomAlert from '../components/CustomAlert';
 
 export default function ServiceDetailsScreen() {
@@ -45,42 +47,59 @@ export default function ServiceDetailsScreen() {
     message: '',
   });
 
-  useEffect(() => {
-    (async () => {
-      const services = await PartnerDatabase.getServices();
-      const item = services.find((s) => s.id === params.id) || services[0] || {
-        id: 'srv-1',
-        name: 'Grand Royal Ballroom',
-        description: 'Central AC banquet hall with 800+ seating capacity, crystal chandeliers, stage setup and green rooms.',
-        category: 'Venue',
-        subCategory: 'AC Banquet Hall',
-        pricing: 75000,
-        pricingUnit: 'PER_EVENT',
-        capacity: 850,
-        images: [],
-        documents: [],
-        features: ['AC Hall', 'Stage Lighting', 'Valet Parking', 'Power Backup'],
-        location: 'Road No 36, Jubilee Hills',
-        city: 'Hyderabad',
-        availability: 'AVAILABLE',
-        status: 'APPROVED',
-        rating: 4.9,
-        totalBookings: 12,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      };
-      setService(item);
-      setIsActive(item.isActive !== false);
-    })();
+  const loadService = useCallback(async () => {
+    const services = await PartnerDatabase.getServices();
+    const item = services.find((s) => s.id === params.id) || services[0] || {
+      id: 'srv-1',
+      name: 'Grand Royal Ballroom',
+      description: 'Central AC banquet hall with 800+ seating capacity, crystal chandeliers, stage setup and green rooms.',
+      category: 'Venue',
+      subCategory: 'AC Banquet Hall',
+      pricing: 75000,
+      pricingUnit: 'PER_EVENT',
+      capacity: 850,
+      images: [],
+      documents: [],
+      features: ['AC Hall', 'Stage Lighting', 'Valet Parking', 'Power Backup'],
+      location: 'Road No 36, Jubilee Hills',
+      city: 'Hyderabad',
+      availability: 'AVAILABLE',
+      status: 'APPROVED',
+      rating: 4.9,
+      totalBookings: 12,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+    setService(item);
+    setIsActive(item.isActive !== false);
   }, [params.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadService();
+    }, [loadService])
+  );
 
   if (!service) return null;
 
   const handleToggleAvailability = async (val: boolean) => {
     setIsActive(val);
-    const services = await PartnerDatabase.getServices();
-    const updated = services.map((s) => (s.id === service.id ? { ...s, isActive: val } : s));
-    await PartnerDatabase.saveServices(updated);
+    try {
+      const session = await PartnerDatabase.getSession();
+      if (session?.token && service?.id) {
+        await fetch(`${PARTNER_API}/services/${service.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.token}`,
+          },
+          body: JSON.stringify({ isActive: val }),
+        }).catch(() => {});
+      }
+    } catch (e) {}
+    const updated = { ...service, isActive: val };
+    setService(updated);
+    await PartnerDatabase.updateService(updated);
   };
 
   const handleDelete = () => {
@@ -95,9 +114,16 @@ export default function ServiceDetailsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const services = await PartnerDatabase.getServices();
-            const updated = services.filter((s) => s.id !== service.id);
-            await PartnerDatabase.saveServices(updated);
+            try {
+              const session = await PartnerDatabase.getSession();
+              if (session?.token && service?.id) {
+                await fetch(`${PARTNER_API}/services/${service.id}`, {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${session.token}` },
+                }).catch(() => {});
+              }
+            } catch (e) {}
+            await PartnerDatabase.deleteService(service.id);
             router.back();
           },
         },
@@ -117,9 +143,17 @@ export default function ServiceDetailsScreen() {
           <ArrowLeft size={20} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Service Details</Text>
-        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-          <Trash2 size={18} color="#f87171" />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => router.push({ pathname: '/edit-service', params: { id: service.id } })}
+          >
+            <Edit3 size={18} color="#60a5fa" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+            <Trash2 size={18} color="#f87171" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -220,6 +254,17 @@ export default function ServiceDetailsScreen() {
           <Text style={styles.cardSectionTitle}>Venue / Business Address</Text>
           <Text style={styles.addressText}>{service.location || 'Road No 36, Jubilee Hills, Hyderabad'}</Text>
         </View>
+
+        {/* Edit Button CTA */}
+        <TouchableOpacity
+          style={styles.editServiceCta}
+          onPress={() => router.push({ pathname: '/edit-service', params: { id: service.id } })}
+        >
+          <Edit3 size={18} color="#ffffff" />
+          <Text style={styles.editServiceCtaText}>Edit Service Details</Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
 
       {/* Alert */}
@@ -246,6 +291,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#161d2d',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backBtn: {
     width: 40,
     height: 40,
@@ -265,6 +325,26 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  editServiceCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#2563eb',
+    borderRadius: 14,
+    paddingVertical: 16,
+    marginTop: 8,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  editServiceCtaText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#ffffff' },
   scroll: { padding: 20, paddingBottom: 40 },

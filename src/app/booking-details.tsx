@@ -32,6 +32,7 @@ import {
   FileCheck,
 } from 'lucide-react-native';
 import PartnerDatabase, { PartnerBooking } from '../services/partnerDatabase';
+import { PARTNER_API } from '../constants/api';
 import CustomAlert from '../components/CustomAlert';
 
 export default function BookingDetailsScreen() {
@@ -84,23 +85,60 @@ export default function BookingDetailsScreen() {
   };
 
   const handleAccept = async () => {
+    if (!booking) return;
     setProcessing(true);
-    setTimeout(async () => {
+    try {
+      const session = await PartnerDatabase.getSession();
+      if (session?.token) {
+        try {
+          const res = await fetch(`${PARTNER_API}/bookings/${booking.id}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.token}`,
+            },
+            body: JSON.stringify({ status: 'CONFIRMED' }),
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            setBooking(json.data);
+            await PartnerDatabase.updateBooking(json.data);
+            setProcessing(false);
+            setAlertConfig({
+              visible: true,
+              type: 'success',
+              title: 'Booking Confirmed! 🎉',
+              message: `You have confirmed the booking for ${booking.user?.name || 'the customer'}. The customer has been notified.`,
+            });
+            return;
+          }
+        } catch (netErr) {}
+      }
+
+      // Offline / local fallback
       const updated = { ...booking, status: 'CONFIRMED' };
       setBooking(updated);
-      const all = await PartnerDatabase.getBookings();
-      await PartnerDatabase.saveBookings(all.map((b) => (b.id === booking.id ? updated : b)));
+      await PartnerDatabase.updateBooking(updated);
       setProcessing(false);
       setAlertConfig({
         visible: true,
         type: 'success',
         title: 'Booking Confirmed! 🎉',
-        message: `You have confirmed the booking for ${booking.user?.name}. The customer has been notified.`,
+        message: `You have confirmed the booking for ${booking.user?.name || 'the customer'}. The customer has been notified.`,
       });
-    }, 600);
+    } catch (e: any) {
+      setProcessing(false);
+      setAlertConfig({
+        visible: true,
+        type: 'error',
+        title: 'Confirmation Failed',
+        message: e.message || 'Could not confirm booking.',
+      });
+    }
   };
 
   const handleDeclineSubmit = async () => {
+    if (!booking) return;
     if (!declineReason.trim()) {
       setAlertConfig({
         visible: true,
@@ -111,11 +149,39 @@ export default function BookingDetailsScreen() {
       return;
     }
     setProcessing(true);
-    setTimeout(async () => {
+    try {
+      const session = await PartnerDatabase.getSession();
+      if (session?.token) {
+        try {
+          const res = await fetch(`${PARTNER_API}/bookings/${booking.id}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.token}`,
+            },
+            body: JSON.stringify({ status: 'CANCELLED', reason: declineReason.trim() }),
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            setBooking(json.data);
+            await PartnerDatabase.updateBooking(json.data);
+            setProcessing(false);
+            setDeclineModalVisible(false);
+            setAlertConfig({
+              visible: true,
+              type: 'info',
+              title: 'Booking Declined',
+              message: 'The reservation has been declined and refund processed to the customer.',
+            });
+            return;
+          }
+        } catch (netErr) {}
+      }
+
+      // Offline fallback
       const updated = { ...booking, status: 'CANCELLED' };
       setBooking(updated);
-      const all = await PartnerDatabase.getBookings();
-      await PartnerDatabase.saveBookings(all.map((b) => (b.id === booking.id ? updated : b)));
+      await PartnerDatabase.updateBooking(updated);
       setProcessing(false);
       setDeclineModalVisible(false);
       setAlertConfig({
@@ -124,10 +190,19 @@ export default function BookingDetailsScreen() {
         title: 'Booking Declined',
         message: 'The reservation has been declined and refund processed to the customer.',
       });
-    }, 600);
+    } catch (e: any) {
+      setProcessing(false);
+      setAlertConfig({
+        visible: true,
+        type: 'error',
+        title: 'Decline Failed',
+        message: e.message || 'Could not decline booking.',
+      });
+    }
   };
 
   const handleVerifyOtpAndComplete = async () => {
+    if (!booking) return;
     if (!enteredOtp || enteredOtp.length < 4) {
       setAlertConfig({
         visible: true,
@@ -139,11 +214,39 @@ export default function BookingDetailsScreen() {
     }
 
     setProcessing(true);
-    setTimeout(async () => {
+    try {
+      const session = await PartnerDatabase.getSession();
+      if (session?.token) {
+        try {
+          const res = await fetch(`${PARTNER_API}/bookings/${booking.id}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.token}`,
+            },
+            body: JSON.stringify({ status: 'COMPLETED', otp: enteredOtp }),
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            setBooking(json.data);
+            await PartnerDatabase.updateBooking(json.data);
+            setProcessing(false);
+            setOtpModalVisible(false);
+            setAlertConfig({
+              visible: true,
+              type: 'success',
+              title: 'Service Completed! 🌟',
+              message: `Booking #${booking.ticketId || booking.id} marked as completed. Funds of ₹${booking.totalAmount.toLocaleString('en-IN')} have been released to your wallet.`,
+            });
+            return;
+          }
+        } catch (netErr) {}
+      }
+
+      // Offline fallback
       const updated = { ...booking, status: 'COMPLETED' };
       setBooking(updated);
-      const all = await PartnerDatabase.getBookings();
-      await PartnerDatabase.saveBookings(all.map((b) => (b.id === booking.id ? updated : b)));
+      await PartnerDatabase.updateBooking(updated);
       setProcessing(false);
       setOtpModalVisible(false);
       setAlertConfig({
@@ -152,7 +255,15 @@ export default function BookingDetailsScreen() {
         title: 'Service Completed! 🌟',
         message: `Booking #${booking.ticketId || booking.id} marked as completed. Funds of ₹${booking.totalAmount.toLocaleString('en-IN')} have been released to your wallet.`,
       });
-    }, 800);
+    } catch (e: any) {
+      setProcessing(false);
+      setAlertConfig({
+        visible: true,
+        type: 'error',
+        title: 'Completion Failed',
+        message: e.message || 'Could not complete booking.',
+      });
+    }
   };
 
   const isConfirmed = booking.status === 'CONFIRMED';

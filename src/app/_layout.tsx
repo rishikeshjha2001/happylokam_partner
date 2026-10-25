@@ -23,6 +23,7 @@ export default function RootLayout() {
         <Stack.Screen name="referrals" />
         <Stack.Screen name="add-service" />
         <Stack.Screen name="service-details" />
+        <Stack.Screen name="edit-service" />
         <Stack.Screen name="booking-details" />
         <Stack.Screen name="edit-profile" />
         <Stack.Screen name="settings" />
