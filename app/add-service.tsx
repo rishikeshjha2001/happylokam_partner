@@ -199,7 +199,7 @@ export default function AddServiceScreen() {
         type: 'success',
         title: 'Service Submitted! 🚀',
         message:
-          'Your new service has been saved and submitted for Admin Approval. It will appear on Happylokam once verified by our quality team.',
+          'Your new service has been saved and submitted to HappyLokam Support. It will appear on Happylokam once verified by our support team.',
         onClose: () => {
           router.replace('/(tabs)/services');
         },
@@ -233,7 +233,7 @@ export default function AddServiceScreen() {
         <View style={styles.banner}>
           <Sparkles size={20} color="#60a5fa" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>Admin Verification Notice</Text>
+            <Text style={styles.bannerTitle}>HappyLokam Support Verification Notice</Text>
             <Text style={styles.bannerText}>
               All submitted listings are verified within 24 hours to ensure high quality for customers.
             </Text>
@@ -374,7 +374,7 @@ export default function AddServiceScreen() {
           {submitting ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text style={styles.submitBtnText}>Submit Service for Admin Review 🚀</Text>
+            <Text style={styles.submitBtnText}>Submit Service for Verification 🚀</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

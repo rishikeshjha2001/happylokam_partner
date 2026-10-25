@@ -83,7 +83,7 @@ export default function KycScreen() {
         visible: true,
         type: 'success',
         title: 'KYC Details Updated! 🛡️',
-        message: 'Your Business & Bank verification details have been securely saved and submitted for Admin verification.',
+        message: 'Your Business & Bank verification details have been securely saved and submitted to HappyLokam Support for verification.',
       });
     }, 800);
   };

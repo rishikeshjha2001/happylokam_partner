@@ -158,7 +158,7 @@ export default function ServicesScreen() {
           bg: '#422006',
           text: '#fbbf24',
           border: '#b45309',
-          label: 'Under Admin Review',
+          label: 'Under Verification',
           icon: <Clock size={12} color="#fbbf24" />,
         };
     }
@@ -199,13 +199,13 @@ export default function ServicesScreen() {
           />
         }
       >
-        {/* Admin Approval Info Banner */}
+        {/* Support Verification Info Banner */}
         <View style={styles.infoBanner}>
           <Sparkles size={20} color="#60a5fa" />
           <View style={styles.infoBannerContent}>
-            <Text style={styles.infoBannerTitle}>Admin Approval System</Text>
+            <Text style={styles.infoBannerTitle}>HappyLokam Support Verification</Text>
             <Text style={styles.infoBannerText}>
-              All newly added services go through quality review before publishing to guarantee trust.
+              All newly added services go through HappyLokam Support verification before publishing to guarantee trust.
             </Text>
           </View>
         </View>

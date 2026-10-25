@@ -115,7 +115,7 @@ export default function SettingsScreen() {
           <View style={[styles.switchRow, styles.rowBorder]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Push Notifications</Text>
-              <Text style={styles.rowSub}>Status updates, admin approvals, and referral rewards</Text>
+              <Text style={styles.rowSub}>Status updates, HappyLokam Support verifications, and referral rewards</Text>
             </View>
             <Switch
               value={pushNotifs}
@@ -163,7 +163,7 @@ export default function SettingsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Partner WhatsApp Help Desk</Text>
-              <Text style={styles.rowSub}>Direct 24/7 support line for vendors & venue managers</Text>
+              <Text style={styles.rowSub}>Direct 24/7 HappyLokam Support line for vendors & venue partners</Text>
             </View>
             <ChevronRight size={18} color="#64748b" />
           </TouchableOpacity>
