@@ -164,8 +164,8 @@ export default function ProfileScreen() {
     try {
       const shareUrl = `https://happylokam.com/partner/signup?ref=${code}`;
       await Share.share({
-        title: 'Join Happylokam as a Partner',
-        message: `Join me as a business partner on Happylokam and grow your event bookings! Use my referral code: ${code}\nSign up here: ${shareUrl}`,
+        title: 'Join happylokam as a Partner',
+        message: `Join me as a business partner on happylokam and grow your event bookings! Use my referral code: ${code}\nSign up here: ${shareUrl}`,
       });
     } catch (e) {
       console.log('Share error:', e);
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
         setAlertConfig({
           type: 'success',
           title: 'OTA Channel Connected',
-          message: 'Happylokam Partner App is synchronized with the latest cloud bundle (v2.4.0). You are running the newest version.',
+          message: 'happylokam Partner App is synchronized with the latest cloud bundle (v2.4.0). You are running the newest version.',
         });
       }, 1000);
     } catch (e: any) {
@@ -333,7 +333,7 @@ export default function ProfileScreen() {
                 <>
                   <CheckCircle2 size={18} color="#4ade80" />
                   <Text style={[styles.statusNoticeText, { color: '#4ade80' }]}>
-                    Your account is Verified & Active. Your listings are live on the Happylokam customer app.
+                    Your account is Verified & Active. Your listings are live on the happylokam customer app.
                   </Text>
                 </>
               ) : (

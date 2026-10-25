@@ -217,7 +217,7 @@ export default function ServiceDetailsScreen() {
               <Text style={styles.toggleTitle}>Accepting Bookings</Text>
               <Text style={styles.toggleSub}>
                 {isActive
-                  ? 'Your service is visible to customers on Happylokam'
+                  ? 'Your service is visible to customers on happylokam'
                   : 'Service is temporarily paused from new customer inquiries'}
               </Text>
             </View>

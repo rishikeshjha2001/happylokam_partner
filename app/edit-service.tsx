@@ -72,6 +72,19 @@ export default function EditServiceScreen() {
   const [features, setFeatures] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
 
+  // Pricing Model, Guests & Packages
+  const [pricingModel, setPricingModel] = useState<'PER_PERSON' | 'FIXED_PACKAGE' | 'MANUAL_CUSTOM'>('PER_PERSON');
+  const [pricePerPerson, setPricePerPerson] = useState('');
+  const [minGuests, setMinGuests] = useState('50');
+  const [maxGuests, setMaxGuests] = useState('500');
+  const [availableCities, setAvailableCities] = useState('Hyderabad, Secunderabad, Gachibowli');
+  const [packages, setPackages] = useState<any[]>([]);
+  const [pkgName, setPkgName] = useState('');
+  const [pkgGuests, setPkgGuests] = useState('');
+  const [pkgPrice, setPkgPrice] = useState('');
+  const [pkgDesc, setPkgDesc] = useState('');
+  const [showAddPackage, setShowAddPackage] = useState(false);
+
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     type?: 'success' | 'error' | 'warning' | 'info' | 'exit';
@@ -114,6 +127,12 @@ export default function EditServiceScreen() {
                     description: bFound.description || '',
                     pricing: parseFloat(bFound.pricing || 0),
                     pricingUnit: bFound.pricingUnit || 'PER_EVENT',
+                    pricingModel: bFound.pricingModel,
+                    pricePerPerson: bFound.pricePerPerson,
+                    minGuests: bFound.minGuests,
+                    maxGuests: bFound.maxGuests,
+                    availableCities: bFound.availableCities,
+                    packages: bFound.packages,
                     capacity: bFound.capacity ? parseInt(bFound.capacity) : undefined,
                     images: bFound.images || [],
                     documents: bFound.documents || [],
@@ -151,6 +170,12 @@ export default function EditServiceScreen() {
     setDescription(item.description || '');
     setFeatures(item.features || []);
     setIsActive(item.isActive !== false);
+    if (item.pricingModel) setPricingModel(item.pricingModel);
+    if (item.pricePerPerson) setPricePerPerson(String(item.pricePerPerson));
+    if (item.minGuests) setMinGuests(String(item.minGuests));
+    if (item.maxGuests) setMaxGuests(String(item.maxGuests));
+    if (item.availableCities) setAvailableCities(item.availableCities.join(', '));
+    if (item.packages) setPackages(item.packages);
   };
 
   const handleAddFeature = () => {
@@ -183,6 +208,11 @@ export default function EditServiceScreen() {
       setSubmitting(true);
       const session = await PartnerDatabase.getSession();
 
+      const citiesList = availableCities
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+
       const payload = {
         name: name.trim(),
         category,
@@ -190,6 +220,12 @@ export default function EditServiceScreen() {
         description: description.trim(),
         pricing: parseFloat(pricing),
         pricingUnit,
+        pricingModel,
+        pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
+        minGuests: parseInt(minGuests) || 50,
+        maxGuests: parseInt(maxGuests) || 500,
+        availableCities: citiesList.length > 0 ? citiesList : [city.trim() || 'Hyderabad'],
+        packages,
         capacity: capacity ? parseInt(capacity) : undefined,
         city: city.trim() || 'Hyderabad',
         location: location.trim() || city.trim() || 'Hyderabad',
@@ -328,7 +364,7 @@ export default function EditServiceScreen() {
                 <Text style={styles.toggleTitle}>Accepting Bookings</Text>
                 <Text style={styles.toggleSub}>
                   {isActive
-                    ? 'Service is live and visible to customers on Happylokam'
+                    ? 'Service is live and visible to customers on happylokam'
                     : 'Service is temporarily paused from new customer inquiries'}
                 </Text>
               </View>

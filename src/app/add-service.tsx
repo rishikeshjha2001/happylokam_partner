@@ -21,9 +21,13 @@ import {
   FileCheck,
   CheckCircle2,
   Building2,
+  Plus,
+  Trash2,
+  Package,
+  Layers,
 } from 'lucide-react-native';
 import { PARTNER_API } from '../constants/api';
-import PartnerDatabase, { PartnerServiceItem } from '../services/partnerDatabase';
+import PartnerDatabase, { PartnerServiceItem, PartnerServicePackage } from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
 
 const CATEGORIES = [
@@ -36,6 +40,12 @@ const CATEGORIES = [
   'Makeup',
   'Choreography',
   'Other',
+];
+
+const PRICING_MODELS = [
+  { id: 'PER_PERSON', label: 'Per Person / Plate', sub: 'Calculates based on guest count' },
+  { id: 'FIXED_PACKAGE', label: 'Fixed Package', sub: 'Flat fee for specific guest count' },
+  { id: 'MANUAL_CUSTOM', label: 'Manual Guest Count', sub: 'Client enters exact custom guests' },
 ];
 
 const PRICING_UNITS = [
@@ -52,10 +62,27 @@ export default function AddServiceScreen() {
   const [description, setDescription] = useState('');
   const [pricing, setPricing] = useState('');
   const [pricingUnit, setPricingUnit] = useState('PER_EVENT');
-  const [capacity, setCapacity] = useState('');
+  const [pricingModel, setPricingModel] = useState<'PER_PERSON' | 'FIXED_PACKAGE' | 'MANUAL_CUSTOM'>('PER_PERSON');
+  const [pricePerPerson, setPricePerPerson] = useState('');
+  const [minGuests, setMinGuests] = useState('50');
+  const [maxGuests, setMaxGuests] = useState('500');
+  const [capacity, setCapacity] = useState('500');
   const [city, setCity] = useState('Hyderabad');
+  const [availableCities, setAvailableCities] = useState('Hyderabad, Secunderabad, Gachibowli, Jubilee Hills');
   const [location, setLocation] = useState('');
   const [features, setFeatures] = useState('');
+
+  // Customizable Tier Packages
+  const [packages, setPackages] = useState<PartnerServicePackage[]>([
+    { name: 'Silver Celebration Package', guests: 100, price: 45000, description: 'Standard setup, 3-course buffet, ambient audio' },
+    { name: 'Gold Royal Package', guests: 250, price: 95000, description: 'Premium decor, grand buffet, concert lighting & stage' },
+  ]);
+  const [pkgName, setPkgName] = useState('');
+  const [pkgGuests, setPkgGuests] = useState('');
+  const [pkgPrice, setPkgPrice] = useState('');
+  const [pkgDesc, setPkgDesc] = useState('');
+  const [showAddPackage, setShowAddPackage] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
@@ -69,6 +96,34 @@ export default function AddServiceScreen() {
     message: '',
   });
 
+  const handleAddPackage = () => {
+    if (!pkgName.trim() || !pkgPrice.trim()) {
+      setAlertConfig({
+        visible: true,
+        type: 'warning',
+        title: 'Package Info Needed',
+        message: 'Please provide at least a package name and price.',
+      });
+      return;
+    }
+    const newPkg: PartnerServicePackage = {
+      name: pkgName.trim(),
+      guests: parseInt(pkgGuests) || 100,
+      price: parseFloat(pkgPrice) || 50000,
+      description: pkgDesc.trim() || undefined,
+    };
+    setPackages([...packages, newPkg]);
+    setPkgName('');
+    setPkgGuests('');
+    setPkgPrice('');
+    setPkgDesc('');
+    setShowAddPackage(false);
+  };
+
+  const handleRemovePackage = (index: number) => {
+    setPackages(packages.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       setAlertConfig({
@@ -79,12 +134,16 @@ export default function AddServiceScreen() {
       });
       return;
     }
-    if (!pricing || isNaN(Number(pricing)) || Number(pricing) <= 0) {
+    const effectivePricing = pricingModel === 'PER_PERSON' && pricePerPerson 
+      ? parseFloat(pricePerPerson) * (parseInt(minGuests) || 50)
+      : parseFloat(pricing);
+
+    if ((!pricing && !pricePerPerson) || isNaN(effectivePricing) || effectivePricing <= 0) {
       setAlertConfig({
         visible: true,
         type: 'warning',
         title: 'Valid Pricing Required',
-        message: 'Please provide a valid pricing amount in INR.',
+        message: 'Please provide a valid pricing amount or per-person rate.',
       });
       return;
     }
@@ -106,17 +165,28 @@ export default function AddServiceScreen() {
         .map((f) => f.trim())
         .filter((f) => f.length > 0);
 
+      const citiesList = availableCities
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+
       const payload = {
         name: name.trim(),
         category: category.toUpperCase().replace(/\s+/g, '_'),
         subCategory: subCategory.trim() || undefined,
         description: description.trim(),
-        pricing: parseFloat(pricing),
-        pricingUnit,
-        capacity: capacity ? parseInt(capacity) : undefined,
+        pricing: effectivePricing,
+        pricingUnit: pricingModel === 'PER_PERSON' ? 'PER_PLATE' : pricingUnit,
+        pricingModel,
+        pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
+        minGuests: parseInt(minGuests) || 50,
+        maxGuests: parseInt(maxGuests) || 500,
+        capacity: capacity ? parseInt(capacity) : (parseInt(maxGuests) || 500),
         city: city.trim() || 'Hyderabad',
+        availableCities: citiesList.length > 0 ? citiesList : [city.trim() || 'Hyderabad'],
         location: location.trim() || city.trim() || 'Hyderabad',
         features: featureList,
+        packages,
       };
 
       let savedService: PartnerServiceItem | null = null;
@@ -140,47 +210,58 @@ export default function AddServiceScreen() {
             const b = json.data;
             savedService = {
               id: b.id,
-              name: b.name || name.trim(),
-              category: b.category || category,
-              subCategory: b.subCategory || (subCategory.trim() || undefined),
-              description: b.description || description.trim(),
-              pricing: parseFloat(b.pricing || pricing),
-              pricingUnit: b.pricingUnit || pricingUnit,
-              capacity: b.capacity ? parseInt(b.capacity) : (capacity ? parseInt(capacity) : undefined),
-              images: b.images || [],
+              name: b.name || payload.name,
+              description: b.description || payload.description,
+              category: b.category || payload.category,
+              subCategory: b.subCategory || payload.subCategory,
+              pricing: b.pricing || payload.pricing,
+              pricingUnit: b.pricingUnit || payload.pricingUnit,
+              pricingModel: payload.pricingModel,
+              pricePerPerson: payload.pricePerPerson,
+              minGuests: payload.minGuests,
+              maxGuests: payload.maxGuests,
+              availableCities: payload.availableCities,
+              packages: payload.packages,
+              capacity: b.capacity || payload.capacity,
+              images: b.images || ['https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'],
               documents: b.documents || [],
-              features: b.features || featureList,
-              location: b.location || (location.trim() || 'Hyderabad'),
-              city: b.city || (city.trim() || 'Hyderabad'),
+              features: b.features || payload.features,
+              location: b.location || payload.location,
+              city: b.city || payload.city,
               availability: b.availability || 'AVAILABLE',
               status: b.status || 'PENDING',
-              rating: b.rating ? parseFloat(b.rating) : 5.0,
+              rating: b.rating || 5.0,
               totalBookings: b.totalBookings || 0,
-              isActive: b.isActive !== false,
+              isActive: b.isActive ?? true,
               createdAt: b.createdAt || new Date().toISOString(),
             };
           }
-        } catch (netErr) {
-          // Offline fallback
+        } catch (apiErr) {
+          console.warn('Backend service add notice:', apiErr);
         }
       }
 
-      // Save locally
       if (!savedService) {
         savedService = {
-          id: 'srv-' + Date.now(),
-          name: name.trim(),
-          category,
-          subCategory: subCategory.trim() || undefined,
-          description: description.trim(),
-          pricing: parseFloat(pricing),
-          pricingUnit,
-          capacity: capacity ? parseInt(capacity) : undefined,
-          images: [],
+          id: `ps_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          name: payload.name,
+          description: payload.description,
+          category: payload.category,
+          subCategory: payload.subCategory,
+          pricing: payload.pricing,
+          pricingUnit: payload.pricingUnit,
+          pricingModel: payload.pricingModel,
+          pricePerPerson: payload.pricePerPerson,
+          minGuests: payload.minGuests,
+          maxGuests: payload.maxGuests,
+          availableCities: payload.availableCities,
+          packages: payload.packages,
+          capacity: payload.capacity,
+          images: ['https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'],
           documents: [],
-          features: featureList,
-          location: location.trim() || 'Hyderabad',
-          city: city.trim() || 'Hyderabad',
+          features: payload.features,
+          location: payload.location,
+          city: payload.city,
           availability: 'AVAILABLE',
           status: 'PENDING',
           rating: 5.0,
@@ -190,27 +271,23 @@ export default function AddServiceScreen() {
         };
       }
 
-      const existing = await PartnerDatabase.getServices();
-      await PartnerDatabase.saveServices([savedService, ...existing.filter((s) => s.id !== savedService!.id)]);
+      await PartnerDatabase.updateService(savedService);
 
       setSubmitting(false);
       setAlertConfig({
         visible: true,
         type: 'success',
-        title: 'Service Submitted! 🚀',
-        message:
-          'Your new service has been saved and submitted to HappyLokam Support. It will appear on Happylokam once verified by our support team.',
-        onClose: () => {
-          router.replace('/(tabs)/services');
-        },
+        title: 'Service Created Successfully! 🎉',
+        message: 'Your service offering, pricing model, coverage areas, and packages have been saved and submitted to happylokam Support.',
+        onClose: () => router.back(),
       });
-    } catch (e) {
+    } catch (err: any) {
       setSubmitting(false);
       setAlertConfig({
         visible: true,
         type: 'error',
-        title: 'Submission Error',
-        message: 'Could not submit service. Please try again.',
+        title: 'Submission Failed',
+        message: err.message || 'Could not save service. Please try again.',
       });
     }
   };
@@ -224,27 +301,27 @@ export default function AddServiceScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add New Service</Text>
+        <Text style={styles.headerTitle}>Add Celebration Service</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Banner */}
+        {/* Verification Notice */}
         <View style={styles.banner}>
-          <Sparkles size={20} color="#60a5fa" />
+          <FileCheck size={20} color="#60a5fa" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>HappyLokam Support Verification Notice</Text>
+            <Text style={styles.bannerTitle}>happylokam Support Verification Notice</Text>
             <Text style={styles.bannerText}>
-              All submitted listings are verified within 24 hours to ensure high quality for customers.
+              All newly listed services and packages are verified by our team within 24 hours to maintain 5-star quality.
             </Text>
           </View>
         </View>
 
-        {/* Name */}
-        <Text style={styles.label}>Service / Package Title *</Text>
+        {/* Service Name */}
+        <Text style={styles.label}>Service Name *</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Royal Grand Banquet Hall"
+          placeholder="e.g. Royal Rajwada Mandap & Floral Decor"
           placeholderTextColor="#64748b"
           value={name}
           onChangeText={setName}
@@ -267,61 +344,117 @@ export default function AddServiceScreen() {
         </ScrollView>
 
         {/* Sub-Category */}
-        <Text style={styles.label}>Sub-Category / Specialization</Text>
+        <Text style={styles.label}>Sub-Category / Theme Specialization</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. AC Banquet, Candid Photography, Multi-Cuisine"
+          placeholder="e.g. AC Banquet, Royal Mandap, Multi-Cuisine Gourmet"
           placeholderTextColor="#64748b"
           value={subCategory}
           onChangeText={setSubCategory}
         />
 
-        {/* Price & Billing Unit */}
-        <View style={styles.row}>
-          <View style={{ flex: 1.2 }}>
-            <Text style={styles.label}>Base Price (₹) *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 50000"
-              placeholderTextColor="#64748b"
-              keyboardType="numeric"
-              value={pricing}
-              onChangeText={setPricing}
-            />
-          </View>
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.label}>Billing Unit</Text>
-            <View style={styles.unitGrid}>
-              {PRICING_UNITS.map((u) => (
-                <TouchableOpacity
-                  key={u.value}
-                  style={[styles.unitBtn, pricingUnit === u.value && styles.unitBtnActive]}
-                  onPress={() => setPricingUnit(u.value)}
-                >
-                  <Text style={[styles.unitBtnText, pricingUnit === u.value && styles.unitBtnTextActive]}>
-                    {u.label}
+        {/* ==================================================== */}
+        {/* PRICING MODEL SELECTION (Per-Person vs Fixed vs Manual) */}
+        {/* ==================================================== */}
+        <Text style={styles.sectionHeader}>Pricing Structure & Guest Setup</Text>
+        <View style={styles.modelContainer}>
+          {PRICING_MODELS.map((m) => {
+            const isSelected = pricingModel === m.id;
+            return (
+              <TouchableOpacity
+                key={m.id}
+                style={[styles.modelCard, isSelected && styles.modelCardSelected]}
+                onPress={() => setPricingModel(m.id as any)}
+                activeOpacity={0.8}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[styles.modelTitle, isSelected && styles.modelTitleSelected]}>
+                    {m.label}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                  {isSelected && <CheckCircle2 size={16} color="#38bdf8" />}
+                </View>
+                <Text style={styles.modelSub}>{m.sub}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Capacity & Location */}
+        {/* Conditional Pricing Inputs */}
+        {pricingModel === 'PER_PERSON' ? (
+          <View style={styles.priceRowBox}>
+            <View style={{ flex: 1.2 }}>
+              <Text style={styles.label}>Price Per Person / Plate (₹) *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 750"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={pricePerPerson}
+                onChangeText={setPricePerPerson}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.label}>Min Guests</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 50"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={minGuests}
+                onChangeText={setMinGuests}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.row}>
+            <View style={{ flex: 1.2 }}>
+              <Text style={styles.label}>Base Package Price (₹) *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 50000"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={pricing}
+                onChangeText={setPricing}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.label}>Billing Unit</Text>
+              <View style={styles.unitGrid}>
+                {PRICING_UNITS.map((u) => (
+                  <TouchableOpacity
+                    key={u.value}
+                    style={[styles.unitBtn, pricingUnit === u.value && styles.unitBtnActive]}
+                    onPress={() => setPricingUnit(u.value)}
+                  >
+                    <Text style={[styles.unitBtnText, pricingUnit === u.value && styles.unitBtnTextActive]}>
+                      {u.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Capacity / Guest Range */}
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Max Capacity (Guests)</Text>
+            <Text style={styles.label}>Max Guest Capacity</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. 800"
               placeholderTextColor="#64748b"
               keyboardType="numeric"
               value={capacity}
-              onChangeText={setCapacity}
+              onChangeText={(val) => {
+                setCapacity(val);
+                setMaxGuests(val);
+              }}
             />
           </View>
           <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.label}>City</Text>
+            <Text style={styles.label}>Base Primary City</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. Hyderabad"
@@ -332,8 +465,19 @@ export default function AddServiceScreen() {
           </View>
         </View>
 
+        {/* Available Service Coverage Areas */}
+        <Text style={styles.label}>Coverage & Available Cities (Where you can serve)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. Hyderabad, Secunderabad, Gachibowli, Jubilee Hills, Bengaluru"
+          placeholderTextColor="#64748b"
+          value={availableCities}
+          onChangeText={setAvailableCities}
+        />
+        <Text style={styles.hintText}>Separate multiple cities or localities by commas</Text>
+
         {/* Full Address / Landmark */}
-        <Text style={styles.label}>Full Address & Landmark</Text>
+        <Text style={styles.label}>Main Studio / Venue Address & Landmark</Text>
         <TextInput
           style={styles.input}
           placeholder="e.g. Road No 36, Jubilee Hills, Near Metro Station"
@@ -342,11 +486,90 @@ export default function AddServiceScreen() {
           onChangeText={setLocation}
         />
 
+        {/* ==================================================== */}
+        {/* CUSTOM PACKAGES LIST & CREATOR                      */}
+        {/* ==================================================== */}
+        <View style={styles.packageHeaderRow}>
+          <View>
+            <Text style={styles.sectionHeader}>Package Tiers (Fixed & Custom Guests)</Text>
+            <Text style={styles.sectionSub}>Offer pre-configured packages for different guest counts</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.addPkgBtn}
+            onPress={() => setShowAddPackage(!showAddPackage)}
+            activeOpacity={0.8}
+          >
+            <Plus size={14} color="#38bdf8" />
+            <Text style={styles.addPkgBtnText}>{showAddPackage ? 'Close' : 'Add Tier'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Packages Cards */}
+        {packages.map((pkg, idx) => (
+          <View key={idx} style={styles.packageCard}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Package size={16} color="#38bdf8" />
+                <Text style={styles.pkgTitle}>{pkg.name}</Text>
+              </View>
+              <Text style={styles.pkgSub}>
+                👥 Up to {pkg.guests} Guests  •  💰 ₹{pkg.price.toLocaleString('en-IN')}
+              </Text>
+              {pkg.description ? <Text style={styles.pkgDescText}>{pkg.description}</Text> : null}
+            </View>
+            <TouchableOpacity onPress={() => handleRemovePackage(idx)} style={styles.removePkgBtn}>
+              <Trash2 size={16} color="#f43f5e" />
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {/* New Package Input Modal/Box */}
+        {showAddPackage && (
+          <View style={styles.newPkgBox}>
+            <Text style={styles.newPkgTitle}>New Package Option</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Package Name (e.g. Platinum Royal Tier)"
+              placeholderTextColor="#64748b"
+              value={pkgName}
+              onChangeText={setPkgName}
+            />
+            <View style={[styles.row, { marginTop: 8 }]}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Target Guests (e.g. 350)"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={pkgGuests}
+                onChangeText={setPkgGuests}
+              />
+              <TextInput
+                style={[styles.input, { flex: 1.2, marginLeft: 10 }]}
+                placeholder="Total Price (₹)"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={pkgPrice}
+                onChangeText={setPkgPrice}
+              />
+            </View>
+            <TextInput
+              style={[styles.input, { marginTop: 8 }]}
+              placeholder="Inclusions / What is included in this tier"
+              placeholderTextColor="#64748b"
+              value={pkgDesc}
+              onChangeText={setPkgDesc}
+            />
+            <TouchableOpacity style={styles.savePkgBtn} onPress={handleAddPackage} activeOpacity={0.85}>
+              <Text style={styles.savePkgBtnText}>Save Package Tier ✨</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Description */}
         <Text style={styles.label}>Detailed Description & Inclusions *</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Describe your service, timings, seating arrangements, amenities..."
+          placeholder="Describe your service, staff arrangements, food menu, setup times, equipment..."
           placeholderTextColor="#64748b"
           multiline
           numberOfLines={4}
@@ -355,10 +578,10 @@ export default function AddServiceScreen() {
         />
 
         {/* Amenities */}
-        <Text style={styles.label}>Key Features & Amenities (Comma Separated)</Text>
+        <Text style={styles.label}>Key Features & Highlights (Comma Separated)</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. AC, Valet Parking, Generator Backup, Stage Lighting"
+          placeholder="e.g. Royal Mandap, Stage Lighting, Multi-Cuisine, Sound Rig, Generator Backup"
           placeholderTextColor="#64748b"
           value={features}
           onChangeText={setFeatures}
@@ -417,7 +640,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#ffffff' },
-  scroll: { padding: 20, paddingBottom: 40 },
+  scroll: { padding: 20, paddingBottom: 50 },
   banner: {
     flexDirection: 'row',
     gap: 12,
@@ -431,7 +654,10 @@ const styles = StyleSheet.create({
   },
   bannerTitle: { fontSize: 14, fontWeight: '700', color: '#93c5fd' },
   bannerText: { fontSize: 12, color: '#64748b', marginTop: 2, lineHeight: 16 },
-  label: { fontSize: 12, fontWeight: '700', color: '#94a3b8', marginBottom: 6, marginTop: 12 },
+  sectionHeader: { fontSize: 15, fontWeight: '800', color: '#f8fafc', marginTop: 18, marginBottom: 4 },
+  sectionSub: { fontSize: 12, color: '#64748b', marginBottom: 12 },
+  label: { fontSize: 12, fontWeight: '700', color: '#94a3b8', marginBottom: 6, marginTop: 14 },
+  hintText: { fontSize: 11, color: '#64748b', marginTop: 4, fontStyle: 'italic' },
   input: {
     backgroundColor: '#0d1117',
     borderRadius: 14,
@@ -458,6 +684,22 @@ const styles = StyleSheet.create({
   catPillText: { fontSize: 13, fontWeight: '600', color: '#94a3b8' },
   catPillTextActive: { color: '#ffffff', fontWeight: '700' },
   row: { flexDirection: 'row' },
+  priceRowBox: { flexDirection: 'row', alignItems: 'center' },
+  modelContainer: { gap: 10, marginTop: 6, marginBottom: 8 },
+  modelCard: {
+    backgroundColor: '#0d1117',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  modelCardSelected: {
+    backgroundColor: '#0b192e',
+    borderColor: '#38bdf8',
+  },
+  modelTitle: { fontSize: 14, fontWeight: '700', color: '#e2e8f0' },
+  modelTitleSelected: { color: '#38bdf8' },
+  modelSub: { fontSize: 12, color: '#64748b', marginTop: 3 },
   unitGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   unitBtn: {
     paddingHorizontal: 8,
@@ -470,12 +712,62 @@ const styles = StyleSheet.create({
   unitBtnActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
   unitBtnText: { fontSize: 10, fontWeight: '700', color: '#94a3b8' },
   unitBtnTextActive: { color: '#ffffff' },
+  packageHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  addPkgBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0b192e',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#38bdf8',
+  },
+  addPkgBtnText: { color: '#38bdf8', fontSize: 12, fontWeight: '700' },
+  packageCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0d1117',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    marginBottom: 10,
+  },
+  pkgTitle: { fontSize: 14, fontWeight: '700', color: '#f1f5f9' },
+  pkgSub: { fontSize: 12, color: '#38bdf8', fontWeight: '600', marginTop: 3 },
+  pkgDescText: { fontSize: 11, color: '#64748b', marginTop: 4 },
+  removePkgBtn: { padding: 8 },
+  newPkgBox: {
+    backgroundColor: '#0b1526',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#1e3a8a',
+    marginBottom: 14,
+  },
+  newPkgTitle: { fontSize: 13, fontWeight: '800', color: '#93c5fd', marginBottom: 10 },
+  savePkgBtn: {
+    backgroundColor: '#2563eb',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  savePkgBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
   submitBtn: {
     backgroundColor: '#2563eb',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 26,
     shadowColor: '#2563eb',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,

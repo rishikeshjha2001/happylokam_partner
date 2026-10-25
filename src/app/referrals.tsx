@@ -126,7 +126,7 @@ export default function ReferralsScreen() {
   const handleCopyLink = async () => {
     try {
       await Share.share({
-        title: 'HappyLokam Partner Invite Link',
+        title: 'happylokam Partner Invite Link',
         message: referralLink,
       });
       setAlertConfig({
@@ -141,7 +141,7 @@ export default function ReferralsScreen() {
   const handleCopyCode = async () => {
     try {
       await Share.share({
-        title: 'HappyLokam Partner Referral Code',
+        title: 'happylokam Partner Referral Code',
         message: code,
       });
       setAlertConfig({
@@ -156,8 +156,8 @@ export default function ReferralsScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        title: 'Join HappyLokam Partner Network',
-        message: `🚀 Grow your event bookings and venue rentals on HappyLokam!\n\nUse my partner invite code: *${code}*\n\n👉 Sign up here: ${referralLink}`,
+        title: 'Join happylokam Partner Network',
+        message: `🚀 Grow your event bookings and venue rentals on happylokam!\n\nUse my partner invite code: *${code}*\n\n👉 Sign up here: ${referralLink}`,
       });
     } catch (e) {}
   };
@@ -293,14 +293,14 @@ export default function ReferralsScreen() {
             <View style={styles.stepNum}><Text style={styles.stepNumText}>2</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.stepTitle}>Vendor Signs Up</Text>
-              <Text style={styles.stepDesc}>They register on HappyLokam using your referral code.</Text>
+              <Text style={styles.stepDesc}>They register on happylokam using your referral code.</Text>
             </View>
           </View>
           <View style={styles.stepRow}>
             <View style={styles.stepNum}><Text style={styles.stepNumText}>3</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.stepTitle}>Earn ₹500 Bonus</Text>
-              <Text style={styles.stepDesc}>₹500 is directly credited to your HappyLokam Wallet on verification.</Text>
+              <Text style={styles.stepDesc}>₹500 is directly credited to your happylokam Wallet on verification.</Text>
             </View>
           </View>
         </View>

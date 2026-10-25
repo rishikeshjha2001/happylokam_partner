@@ -131,7 +131,7 @@ export default function DashboardScreen() {
         setAlertConfig({
           type: 'success',
           title: '⚡ Server Charge Activated!',
-          message: '₹99 Server Charge verified. Your HappyLokam Cloud Server & Listing are now ACTIVE & LIVE!',
+          message: '₹99 Server Charge verified. Your happylokam Cloud Server & Listing are now ACTIVE & LIVE!',
           onConfirm: () => setAlertConfig(null),
         });
       } else {
@@ -293,7 +293,7 @@ export default function DashboardScreen() {
               <Zap size={18} color="#34d399" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.serverActiveTitle}>⚡ HappyLokam Cloud Active</Text>
+              <Text style={styles.serverActiveTitle}>⚡ happylokam Cloud Active</Text>
               <Text style={styles.serverActiveSub}>₹99 Monthly Server Charge Paid & Verified</Text>
             </View>
             <View style={styles.serverActiveBadge}>
@@ -516,7 +516,7 @@ export default function DashboardScreen() {
                 </View>
                 <View>
                   <Text style={styles.modalTitle}>Cloud Server Activation</Text>
-                  <Text style={styles.modalSubtitle}>HappyLokam Partner Network</Text>
+                  <Text style={styles.modalSubtitle}>happylokam Partner Network</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={() => setShowServerChargeModal(false)} style={styles.modalCloseBtn}>

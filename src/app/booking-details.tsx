@@ -80,7 +80,7 @@ export default function BookingDetailsScreen() {
 
   const handleWhatsApp = () => {
     const phone = booking.user?.phone?.replace(/[^0-9]/g, '') || '919849055443';
-    const text = `Hello ${booking.user?.name || 'Customer'}, regarding your booking for ${booking.venue?.name || 'Happylokam Service'} on ${booking.date}...`;
+    const text = `Hello ${booking.user?.name || 'Customer'}, regarding your booking for ${booking.venue?.name || 'happylokam Service'} on ${booking.date}...`;
     Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`);
   };
 

@@ -53,7 +53,7 @@ export default function SettingsScreen() {
         visible: true,
         type: 'success',
         title: 'App Up to Date 🚀',
-        message: 'Happylokam Partner App v1.0.0 (OTA build: #20261004) is running the latest production updates.',
+        message: 'happylokam Partner App v1.0.0 (OTA build: #20261004) is running the latest production updates.',
       });
     }, 800);
   };
@@ -79,7 +79,7 @@ export default function SettingsScreen() {
   };
 
   const openSupportWhatsApp = () => {
-    Linking.openURL('https://wa.me/919876543210?text=Hi%20Happylokam%20Partner%20Support');
+    Linking.openURL('https://wa.me/919876543210?text=Hi%20happylokam%20Partner%20Support');
   };
 
   return (
@@ -115,7 +115,7 @@ export default function SettingsScreen() {
           <View style={[styles.switchRow, styles.rowBorder]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Push Notifications</Text>
-              <Text style={styles.rowSub}>Status updates, HappyLokam Support verifications, and referral rewards</Text>
+              <Text style={styles.rowSub}>Status updates, happylokam Support verifications, and referral rewards</Text>
             </View>
             <Switch
               value={pushNotifs}
@@ -163,7 +163,7 @@ export default function SettingsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Partner WhatsApp Help Desk</Text>
-              <Text style={styles.rowSub}>Direct 24/7 HappyLokam Support line for vendors & venue partners</Text>
+              <Text style={styles.rowSub}>Direct 24/7 happylokam Support line for vendors & venue partners</Text>
             </View>
             <ChevronRight size={18} color="#64748b" />
           </TouchableOpacity>

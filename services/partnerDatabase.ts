@@ -25,6 +25,13 @@ export interface PartnerSession {
   token: string;
 }
 
+export interface PartnerServicePackage {
+  name: string;
+  guests: number;
+  price: number;
+  description?: string;
+}
+
 export interface PartnerServiceItem {
   id: string;
   name: string;
@@ -33,6 +40,12 @@ export interface PartnerServiceItem {
   subCategory?: string;
   pricing: number;
   pricingUnit: string;
+  pricingModel?: 'PER_PERSON' | 'FIXED_PACKAGE' | 'MANUAL_CUSTOM';
+  pricePerPerson?: number;
+  availableCities?: string[];
+  minGuests?: number;
+  maxGuests?: number;
+  packages?: PartnerServicePackage[];
   capacity?: number;
   images: string[];
   documents: string[];

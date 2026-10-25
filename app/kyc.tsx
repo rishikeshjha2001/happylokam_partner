@@ -101,7 +101,7 @@ export default function KycScreen() {
         visible: true,
         type: 'success',
         title: 'KYC Details Updated! 🛡️',
-        message: 'Your Business & Bank verification details have been securely saved and accepted by HappyLokam Support.',
+        message: 'Your Business & Bank verification details have been securely saved and accepted by happylokam Support.',
       });
     } catch (e) {
       console.warn('KYC update error:', e);
@@ -109,7 +109,7 @@ export default function KycScreen() {
         visible: true,
         type: 'success',
         title: 'KYC Details Updated! 🛡️',
-        message: 'Your Business & Bank verification details have been securely saved and submitted to HappyLokam Support.',
+        message: 'Your Business & Bank verification details have been securely saved and submitted to happylokam Support.',
       });
     } finally {
       setSaving(false);

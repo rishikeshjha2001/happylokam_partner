@@ -24,7 +24,7 @@ export default function ExitConfirmModal({ visible, onCancel, onClose, onExit }:
     <CustomAlert
       visible={visible}
       type="exit"
-      title="Exit Happylokam Partner?"
+      title="Exit happylokam Partner?"
       message="Are you sure you want to close the application? You can reopen it at any time to manage your business."
       buttons={[
         {

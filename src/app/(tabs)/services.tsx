@@ -203,9 +203,9 @@ export default function ServicesScreen() {
         <View style={styles.infoBanner}>
           <Sparkles size={20} color="#60a5fa" />
           <View style={styles.infoBannerContent}>
-            <Text style={styles.infoBannerTitle}>HappyLokam Support Verification</Text>
+            <Text style={styles.infoBannerTitle}>happylokam Support Verification</Text>
             <Text style={styles.infoBannerText}>
-              All newly added services go through HappyLokam Support verification before publishing to guarantee trust.
+              All newly added services go through happylokam Support verification before publishing to guarantee trust.
             </Text>
           </View>
         </View>
