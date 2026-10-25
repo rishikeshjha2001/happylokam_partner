@@ -186,6 +186,20 @@ class PartnerDatabase {
     const raw = await AsyncStorage.getItem(KEYS.DASHBOARD);
     return raw ? JSON.parse(raw) : null;
   }
+
+  // ---- Clean Cache ----
+  async cleanCache(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        KEYS.SERVICES,
+        KEYS.BOOKINGS,
+        KEYS.DASHBOARD,
+        KEYS.NOTIFICATIONS,
+      ]);
+    } catch (e) {
+      console.warn('PartnerDatabase.cleanCache error:', e);
+    }
+  }
 }
 
 export default new PartnerDatabase();
