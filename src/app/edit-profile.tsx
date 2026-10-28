@@ -114,7 +114,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Business / Brand Name *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Business / Brand Name"
+          placeholder="e.g. Royal Palace Events"
           placeholderTextColor="#64748b"
           value={businessName}
           onChangeText={setBusinessName}
@@ -124,7 +124,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Owner / Managing Director Name *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Owner Name"
+          placeholder="e.g. Vikram Reddy"
           placeholderTextColor="#64748b"
           value={ownerName}
           onChangeText={setOwnerName}
@@ -134,7 +134,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Official Business Email</Text>
         <TextInput
           style={[styles.input, { opacity: 0.8 }]}
-          placeholder="name@email.com"
+          placeholder="e.g. partner@happylokam.com"
           placeholderTextColor="#64748b"
           value={email}
           onChangeText={setEmail}
@@ -146,7 +146,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Customer Contact Phone *</Text>
         <TextInput
           style={styles.input}
-          placeholder="10-digit mobile number"
+          placeholder="e.g. +91 98765 43210"
           placeholderTextColor="#64748b"
           value={phone}
           onChangeText={setPhone}
@@ -157,7 +157,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Operating City & Primary Location</Text>
         <TextInput
           style={styles.input}
-          placeholder="City / Location"
+          placeholder="e.g. Jubilee Hills, Hyderabad"
           placeholderTextColor="#64748b"
           value={location}
           onChangeText={setLocation}
@@ -167,7 +167,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Service Categories (Comma separated)</Text>
         <TextInput
           style={styles.input}
-          placeholder="Venues, Catering, Decoration, etc."
+          placeholder="e.g. Venues, Catering, Decoration"
           placeholderTextColor="#64748b"
           value={categories}
           onChangeText={setCategories}

@@ -92,38 +92,7 @@ export default function WalletScreen() {
       return;
     }
 
-    setWithdrawing(true);
-    setTimeout(async () => {
-      const newBal = balance - amt;
-      setBalance(newBal);
-      const newTx: Transaction = {
-        id: 'tx-' + Date.now(),
-        type: 'PAYOUT',
-        title: 'Bank Transfer Withdrawal Request',
-        subtitle: 'Processing to Primary Bank Account',
-        amount: amt,
-        date: 'Just Now',
-        status: 'PENDING',
-      };
-      setTransactions([newTx, ...transactions]);
-
-      // Update session balance
-      const session = await PartnerDatabase.getSession();
-      if (session) {
-        session.walletBalance = newBal;
-        await PartnerDatabase.saveSession(session);
-      }
-
-      setWithdrawing(false);
-      setWithdrawModalVisible(false);
-      setWithdrawAmount('');
-      setAlertConfig({
-        visible: true,
-        type: 'success',
-        title: 'Payout Initiated! 💸',
-        message: `Withdrawal request for ₹${amt.toLocaleString('en-IN')} has been submitted. It will be credited to your verified bank account within 24 hours.`,
-      });
-    }, 1000);
+    setAlertConfig({ visible: true, type: 'warning', title: 'Payouts temporarily unavailable', message: 'For your security, withdrawals require a server-verified payout request. This feature will be enabled after the payout API is connected.' });
   };
 
   return (

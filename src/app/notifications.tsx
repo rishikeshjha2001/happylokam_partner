@@ -164,6 +164,9 @@ export default function NotificationsScreen() {
     }
   };
 
+  const unreadCount = notifications.filter((item) => !item.isRead).length;
+  const filtered = filter === 'UNREAD' ? notifications.filter((item) => !item.isRead) : notifications;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#070a12" />

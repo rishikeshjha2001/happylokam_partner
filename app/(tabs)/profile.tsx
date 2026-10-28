@@ -10,6 +10,7 @@ import {
   StatusBar,
   Share,
   BackHandler,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -503,6 +504,21 @@ export default function ProfileScreen() {
                 ) : (
                   <ChevronRight size={18} color="#64748b" />
                 )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => Linking.openURL('tel:+918969255561')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <Phone size={18} color="#38bdf8" />
+                  <View>
+                    <Text style={styles.menuItemText}>Partner Voice Support</Text>
+                    <Text style={styles.menuItemSub}>Call +91 8969255561 (24/7 dedicated line)</Text>
+                  </View>
+                </View>
+                <ChevronRight size={18} color="#64748b" />
               </TouchableOpacity>
             </View>
 

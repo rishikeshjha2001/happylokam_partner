@@ -461,4 +461,5 @@ const styles = StyleSheet.create({
   statusFooterText: { fontSize: 11, fontWeight: '800' },
   viewDetailHint: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   viewDetailText: { fontSize: 12, fontWeight: '700', color: '#60a5fa' },
+  categoryText: { fontSize: 11, fontWeight: '600', color: '#94a3b8' },
 });

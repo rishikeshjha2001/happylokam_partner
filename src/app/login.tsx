@@ -80,7 +80,7 @@ export default function LoginScreen() {
                 <Mail size={18} color="#64748b" />
                 <TextInput
                   style={styles.input}
-                  placeholder="name@email.com"
+                  placeholder="partner@example.com"
                   placeholderTextColor="#475569"
                   value={email}
                   onChangeText={setEmail}
@@ -123,6 +123,7 @@ export default function LoginScreen() {
                 </View>
               )}
             </TouchableOpacity>
+
           </View>
 
           {/* Footer */}
@@ -173,6 +174,16 @@ const styles = StyleSheet.create({
     shadowColor: '#2563eb', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
   },
   loginBtnText: { fontSize: 16, fontWeight: '800', color: '#ffffff' },
+  demoBtn: {
+    marginTop: 12,
+    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 99, 235, 0.35)',
+  },
+  demoBtnText: { fontSize: 13, fontWeight: '700', color: '#60a5fa' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 28 },
   footerText: { fontSize: 14, color: '#64748b' },
   footerLink: { fontSize: 14, fontWeight: '700', color: '#60a5fa' },

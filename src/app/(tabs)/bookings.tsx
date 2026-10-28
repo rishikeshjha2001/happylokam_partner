@@ -64,7 +64,7 @@ export default function BookingsScreen() {
 
       // Load cached bookings first
       const cached = await PartnerDatabase.getBookings();
-      if (cached && cached.length > 0) {
+      if (cached.length > 0) {
         setBookings(cached);
       } else {
         setBookings([]);
@@ -73,16 +73,16 @@ export default function BookingsScreen() {
       // Fetch from API with timeout
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 3500);
+        const timer = setTimeout(() => controller.abort(), 2500);
         const res = await fetch(`${PARTNER_API}/bookings`, {
           headers: { Authorization: `Bearer ${session.token}` },
           signal: controller.signal,
         });
         clearTimeout(timer);
         const json = await res.json();
-        if (json.success && json.data) {
-          setBookings(json.data || []);
-          await PartnerDatabase.saveBookings(json.data || []);
+        if (json.success && json.data && json.data.length > 0) {
+          setBookings(json.data);
+          await PartnerDatabase.saveBookings(json.data);
         }
       } catch (netErr) {
         // Offline fallback
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 120,
+    paddingBottom: 40,
   },
   loaderContainer: {
     paddingVertical: 60,

@@ -1,8 +1,16 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'react-native';
+import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { checkAndApplyOTAUpdates } from '../services/otaService';
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Expo has already loaded the embedded bundle. A compatible update is
+    // fetched and activated before partners begin using the dashboard.
+    void checkAndApplyOTAUpdates();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor="#070a12" />

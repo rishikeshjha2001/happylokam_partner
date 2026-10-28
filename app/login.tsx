@@ -124,33 +124,6 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.demoBtn}
-              onPress={async () => {
-                await PartnerDatabase.saveSession({
-                  id: 'demo-partner-1',
-                  hlpId: 'HLP-89234',
-                  name: 'Royal Palace Events',
-                  email: 'partner@happylokam.com',
-                  phone: '+91 98765 43210',
-                  businessName: 'Royal Palace Conventions',
-                  categories: ['Venues', 'Catering', 'Photography'],
-                  location: 'Jubilee Hills, Hyderabad',
-                  status: 'APPROVED',
-                  isVerified: true,
-                  ownerName: 'Vikram Reddy',
-                  gstNumber: '36AABCU9603R1ZM',
-                  panNumber: 'ABCDE1234F',
-                  walletBalance: 24500,
-                  referralCode: 'HLPROYAL89',
-                  token: 'demo-jwt-token-partner',
-                });
-                router.replace('/(tabs)');
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.demoBtnText}>⚡ Explore Demo Dashboard</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Footer */}

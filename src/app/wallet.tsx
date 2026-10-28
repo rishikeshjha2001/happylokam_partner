@@ -28,7 +28,6 @@ import {
 } from 'lucide-react-native';
 import PartnerDatabase from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
-import { PARTNER_API } from '../constants/api';
 
 interface Transaction {
   id: string;
@@ -40,15 +39,16 @@ interface Transaction {
   status: 'COMPLETED' | 'PENDING';
 }
 
+const SAMPLE_TRANSACTIONS: Transaction[] = [];
+
 export default function WalletScreen() {
   const [balance, setBalance] = useState(0);
   const [inEscrow, setInEscrow] = useState(0);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(SAMPLE_TRANSACTIONS);
   const [filter, setFilter] = useState<'ALL' | 'CREDIT' | 'PAYOUT' | 'REFERRAL'>('ALL');
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     type?: any;
@@ -62,55 +62,9 @@ export default function WalletScreen() {
 
   useEffect(() => {
     (async () => {
-      try {
-        const session = await PartnerDatabase.getSession();
-        if (session?.walletBalance !== undefined) {
-          setBalance(session.walletBalance);
-        }
-
-        if (session?.token) {
-          const res = await fetch(`${PARTNER_API}/referrals`, {
-            headers: { Authorization: `Bearer ${session.token}` },
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json.success && json.data) {
-              setBalance(json.data.walletBalance || 0);
-              const txs: Transaction[] = [];
-              if (json.data.referralBookings && Array.isArray(json.data.referralBookings)) {
-                json.data.referralBookings.forEach((b: any, idx: number) => {
-                  txs.push({
-                    id: b.id || `tx-ref-${idx}`,
-                    type: 'REFERRAL',
-                    title: 'Customer Referral Commission',
-                    subtitle: `Booking by ${b.customerName || 'Customer'}`,
-                    amount: b.amount ? Math.round(b.amount * 0.05) : 0,
-                    date: new Date(b.date || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-                    status: 'COMPLETED',
-                  });
-                });
-              }
-              if (json.data.referredPartners && Array.isArray(json.data.referredPartners)) {
-                json.data.referredPartners.forEach((p: any, idx: number) => {
-                  txs.push({
-                    id: p.id || `tx-part-${idx}`,
-                    type: 'REFERRAL',
-                    title: 'Partner Onboarding Bonus',
-                    subtitle: `Referred: ${p.name || 'Partner'}`,
-                    amount: p.reward || 500,
-                    date: new Date(p.joinedDate || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-                    status: p.status === 'VERIFIED' ? 'COMPLETED' : 'PENDING',
-                  });
-                });
-              }
-              setTransactions(txs);
-            }
-          }
-        }
-      } catch (e) {
-        console.log('Error loading wallet:', e);
-      } finally {
-        setLoading(false);
+      const session = await PartnerDatabase.getSession();
+      if (session?.walletBalance !== undefined) {
+        setBalance(session.walletBalance);
       }
     })();
   }, []);
@@ -138,38 +92,7 @@ export default function WalletScreen() {
       return;
     }
 
-    setWithdrawing(true);
-    setTimeout(async () => {
-      const newBal = balance - amt;
-      setBalance(newBal);
-      const newTx: Transaction = {
-        id: 'tx-' + Date.now(),
-        type: 'PAYOUT',
-        title: 'Bank Transfer Withdrawal Request',
-        subtitle: 'Processing to Primary Bank Account',
-        amount: amt,
-        date: 'Just Now',
-        status: 'PENDING',
-      };
-      setTransactions([newTx, ...transactions]);
-
-      // Update session balance
-      const session = await PartnerDatabase.getSession();
-      if (session) {
-        session.walletBalance = newBal;
-        await PartnerDatabase.saveSession(session);
-      }
-
-      setWithdrawing(false);
-      setWithdrawModalVisible(false);
-      setWithdrawAmount('');
-      setAlertConfig({
-        visible: true,
-        type: 'success',
-        title: 'Payout Initiated! 💸',
-        message: `Withdrawal request for ₹${amt.toLocaleString('en-IN')} has been submitted. It will be credited to your verified bank account within 24 hours.`,
-      });
-    }, 1000);
+    setAlertConfig({ visible: true, type: 'warning', title: 'Payouts temporarily unavailable', message: 'For your security, withdrawals require a server-verified payout request. This feature will be enabled after the payout API is connected.' });
   };
 
   return (

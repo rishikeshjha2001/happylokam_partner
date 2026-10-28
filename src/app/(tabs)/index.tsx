@@ -27,18 +27,11 @@ import {
   Gift,
   Wallet,
   ChevronRight,
-  Zap,
-  Sparkles,
-  Check,
-  X,
-  CreditCard,
 } from 'lucide-react-native';
-import { Modal } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { PARTNER_API } from '../../constants/api';
 import PartnerDatabase, { PartnerSession, DashboardStats } from '../../services/partnerDatabase';
 import ExitConfirmModal from '../../components/ExitConfirmModal';
-import CustomAlert, { CustomAlertOptions } from '../../components/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -57,9 +50,6 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
-  const [showServerChargeModal, setShowServerChargeModal] = useState(false);
-  const [serverChargePaying, setServerChargePaying] = useState(false);
-  const [alertConfig, setAlertConfig] = useState<CustomAlertOptions | null>(null);
 
   // Android Back Handler for Exit Confirmation
   useFocusEffect(
@@ -73,82 +63,6 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  const handlePayServerCharge = async () => {
-    if (!session?.token) {
-      setAlertConfig({
-        type: 'error',
-        title: 'Authentication Required',
-        message: 'Please login again to complete the activation.',
-        onConfirm: () => setAlertConfig(null),
-      });
-      return;
-    }
-
-    setServerChargePaying(true);
-    try {
-      // 1. Create order
-      const orderRes = await fetch(`${PARTNER_API}/pay-server-charge`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.token}`,
-        },
-      });
-
-      const orderJson = await orderRes.json();
-      if (!orderRes.ok || !orderJson.success) {
-        throw new Error(orderJson.error || 'Failed to create server charge order');
-      }
-
-      const orderData = orderJson.data;
-
-      // 2. Verify payment
-      const verifyRes = await fetch(`${PARTNER_API}/verify-server-charge`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.token}`,
-        },
-        body: JSON.stringify({
-          razorpay_order_id: orderData.orderId,
-          razorpay_payment_id: `pay_hlp_${Date.now()}`,
-          razorpay_signature: `sig_verified_${Date.now()}`,
-        }),
-      });
-
-      const verifyJson = await verifyRes.json();
-      if (verifyRes.ok && verifyJson.success) {
-        const updatedSession = {
-          ...session,
-          subscriptionStatus: 'ACTIVE',
-          status: 'VERIFIED',
-          isVerified: true,
-        };
-        await PartnerDatabase.saveSession(updatedSession);
-        setSession(updatedSession);
-        setShowServerChargeModal(false);
-
-        setAlertConfig({
-          type: 'success',
-          title: '⚡ Server Charge Activated!',
-          message: '₹99 Server Charge verified. Your happylokam Cloud Server & Listing are now ACTIVE & LIVE!',
-          onConfirm: () => setAlertConfig(null),
-        });
-      } else {
-        throw new Error(verifyJson.error || 'Payment verification failed');
-      }
-    } catch (err: any) {
-      setAlertConfig({
-        type: 'error',
-        title: 'Payment Failed',
-        message: err.message || 'Unable to process ₹99 server charge. Please try again.',
-        onConfirm: () => setAlertConfig(null),
-      });
-    } finally {
-      setServerChargePaying(false);
-    }
-  };
-
   const loadData = useCallback(async () => {
     try {
       const s = await PartnerDatabase.getSession();
@@ -158,46 +72,33 @@ export default function DashboardScreen() {
         return;
       }
 
-      // Load cached data from local database if available
-      const cached = await PartnerDatabase.getDashboard();
-      if (cached) {
-        setStats(cached.stats);
-        setRecentBookings(cached.recentBookings || []);
-      } else {
-        setStats({
-          totalBookings: 0,
-          pendingBookings: 0,
-          completedBookings: 0,
-          cancelledBookings: 0,
-          totalServices: 0,
-          activeServices: 0,
-          totalRevenue: 0,
-          monthlyRevenue: 0,
-        });
-        setRecentBookings([]);
-      }
+      // Initial empty stats
+      const defaultStats: DashboardStats = {
+        totalBookings: 0,
+        pendingBookings: 0,
+        completedBookings: 0,
+        cancelledBookings: 0,
+        totalServices: 0,
+        activeServices: 0,
+        totalRevenue: 0,
+        monthlyRevenue: 0,
+      };
 
-      // Fast network fetch from live backend
+      setStats(defaultStats);
+      setRecentBookings([]);
+
+      // Fast network fetch if live
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 3500);
+        const timer = setTimeout(() => controller.abort(), 2500);
         const res = await fetch(`${PARTNER_API}/dashboard`, {
           headers: { Authorization: `Bearer ${s.token}` },
           signal: controller.signal,
         });
         clearTimeout(timer);
         const json = await res.json();
-        if (json.success && json.data) {
-          setStats(json.data.stats || {
-            totalBookings: 0,
-            pendingBookings: 0,
-            completedBookings: 0,
-            cancelledBookings: 0,
-            totalServices: 0,
-            activeServices: 0,
-            totalRevenue: 0,
-            monthlyRevenue: 0,
-          });
+        if (json.success) {
+          setStats(json.data.stats);
           setRecentBookings(json.data.recentBookings || []);
           await PartnerDatabase.saveDashboard(json.data);
         }
@@ -285,46 +186,6 @@ export default function DashboardScreen() {
           </View>
           <ChevronRight size={16} color="#64748b" />
         </TouchableOpacity>
-
-        {/* Server Charge & Listing Status Card */}
-        {session?.subscriptionStatus === 'ACTIVE' ? (
-          <View style={styles.serverActiveCard}>
-            <View style={styles.serverActiveIcon}>
-              <Zap size={18} color="#34d399" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.serverActiveTitle}>⚡ happylokam Cloud Active</Text>
-              <Text style={styles.serverActiveSub}>₹99 Monthly Server Charge Paid & Verified</Text>
-            </View>
-            <View style={styles.serverActiveBadge}>
-              <Text style={styles.serverActiveBadgeText}>LIVE</Text>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.serverPendingCard}
-            activeOpacity={0.88}
-            onPress={() => setShowServerChargeModal(true)}
-          >
-            <View style={styles.serverPendingIcon}>
-              <Zap size={20} color="#fbbf24" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.serverPendingTitle}>Activate Cloud Server</Text>
-                <View style={styles.serverPendingTag}>
-                  <Text style={styles.serverPendingTagText}>₹99 / Year</Text>
-                </View>
-              </View>
-              <Text style={styles.serverPendingSub}>
-                Pay ₹99 server charge to activate live listings & verified partner badge
-              </Text>
-            </View>
-            <View style={styles.serverPendingBtn}>
-              <Text style={styles.serverPendingBtnText}>Pay ₹99</Text>
-            </View>
-          </TouchableOpacity>
-        )}
 
         {/* Revenue Cards */}
         <View style={styles.revenueRow}>
@@ -499,87 +360,6 @@ export default function DashboardScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ₹99 Server Charge Activation Modal */}
-      <Modal
-        visible={showServerChargeModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowServerChargeModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.serverModalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <View style={styles.modalHeaderLeft}>
-                <View style={styles.modalIconBox}>
-                  <Zap size={22} color="#fbbf24" />
-                </View>
-                <View>
-                  <Text style={styles.modalTitle}>Cloud Server Activation</Text>
-                  <Text style={styles.modalSubtitle}>happylokam Partner Network</Text>
-                </View>
-              </View>
-              <TouchableOpacity onPress={() => setShowServerChargeModal(false)} style={styles.modalCloseBtn}>
-                <X size={20} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Price Hero */}
-            <View style={styles.priceHero}>
-              <Text style={styles.priceHeroLabel}>MONTHLY CLOUD SERVER CHARGE</Text>
-              <View style={styles.priceHeroAmountRow}>
-                <Text style={styles.priceHeroSymbol}>₹</Text>
-                <Text style={styles.priceHeroNumber}>99</Text>
-                <Text style={styles.priceHeroPeriod}>/ month</Text>
-              </View>
-              <Text style={styles.priceHeroNote}>Direct activation for 30 days live cloud listing (Monthly)</Text>
-            </View>
-
-            {/* Feature List */}
-            <View style={styles.featureList}>
-              <View style={styles.featureItem}>
-                <Check size={16} color="#34d399" />
-                <Text style={styles.featureText}>Dedicated AWS Cloud server node allocation</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Check size={16} color="#34d399" />
-                <Text style={styles.featureText}>Verified Partner Badge & top search ranking</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Check size={16} color="#34d399" />
-                <Text style={styles.featureText}>Real-time push notifications on new user bookings</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Check size={16} color="#34d399" />
-                <Text style={styles.featureText}>Zero-commission direct customer settlements</Text>
-              </View>
-            </View>
-
-            {/* Pay Button */}
-            <TouchableOpacity
-              style={[styles.payServerBtn, serverChargePaying && { opacity: 0.7 }]}
-              disabled={serverChargePaying}
-              onPress={handlePayServerCharge}
-            >
-              {serverChargePaying ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <CreditCard size={18} color="#ffffff" />
-                  <Text style={styles.payServerBtnText}>Pay ₹99 & Activate Now</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Custom Alert Dialog */}
-      <CustomAlert
-        config={alertConfig}
-        onClose={() => setAlertConfig(null)}
-      />
-
       {/* Exit App Confirmation Modal */}
       <ExitConfirmModal
         visible={showExitModal}
@@ -631,7 +411,7 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     backgroundColor: 'rgba(99, 102, 241, 0.06)',
   },
-  scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120 },
+  scroll: { paddingHorizontal: 20, paddingTop: 8 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -769,130 +549,4 @@ const styles = StyleSheet.create({
   bookingAmount: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
   bookingStatusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
   bookingStatusText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
-  // Server Charge & Cloud Activation Cards
-  serverActiveCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0a1d17',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
-    gap: 12,
-  },
-  serverActiveIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  serverActiveTitle: { fontSize: 14, fontWeight: '800', color: '#34d399' },
-  serverActiveSub: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
-  serverActiveBadge: {
-    backgroundColor: 'rgba(52, 211, 153, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  serverActiveBadgeText: { fontSize: 10, fontWeight: '900', color: '#34d399', letterSpacing: 0.5 },
-  serverPendingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1506',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.35)',
-    gap: 12,
-  },
-  serverPendingIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  serverPendingTitle: { fontSize: 14, fontWeight: '800', color: '#fbbf24' },
-  serverPendingTag: {
-    backgroundColor: 'rgba(251, 191, 36, 0.2)',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  serverPendingTagText: { fontSize: 10, fontWeight: '800', color: '#fbbf24' },
-  serverPendingSub: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
-  serverPendingBtn: {
-    backgroundColor: '#fbbf24',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  serverPendingBtnText: { fontSize: 12, fontWeight: '800', color: '#000000' },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  serverModalContent: {
-    width: '100%',
-    backgroundColor: '#0d1117',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#1c2333',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  modalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  modalIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: '#ffffff' },
-  modalSubtitle: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
-  modalCloseBtn: { padding: 6 },
-  priceHero: {
-    backgroundColor: '#121622',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: '#1c2333',
-  },
-  priceHeroLabel: { fontSize: 10, fontWeight: '800', color: '#64748b', letterSpacing: 0.8 },
-  priceHeroAmountRow: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 4 },
-  priceHeroSymbol: { fontSize: 20, fontWeight: '800', color: '#60a5fa' },
-  priceHeroNumber: { fontSize: 36, fontWeight: '900', color: '#ffffff', marginHorizontal: 2 },
-  priceHeroPeriod: { fontSize: 13, color: '#94a3b8', fontWeight: '600' },
-  priceHeroNote: { fontSize: 11, color: '#94a3b8', textAlign: 'center' },
-  featureList: { gap: 10, marginBottom: 20 },
-  featureItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featureText: { fontSize: 13, color: '#cbd5e1', fontWeight: '500', flex: 1 },
-  payServerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2563eb',
-    paddingVertical: 15,
-    borderRadius: 14,
-    gap: 8,
-  },
-  payServerBtnText: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
 });

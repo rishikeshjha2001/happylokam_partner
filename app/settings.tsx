@@ -27,6 +27,7 @@ import {
 } from 'lucide-react-native';
 import PartnerDatabase from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
+import { checkOTAUpdates, applyOTAUpdate } from '../services/otaService';
 
 export default function SettingsScreen() {
   const [pushNotifs, setPushNotifs] = useState(true);
@@ -45,17 +46,47 @@ export default function SettingsScreen() {
     message: '',
   });
 
-  const handleOtaCheck = () => {
+  const handleOtaCheck = async () => {
     setCheckingOta(true);
-    setTimeout(() => {
+    try {
+      const check = await checkOTAUpdates(true);
+      setCheckingOta(false);
+      if (check.isAvailable) {
+        setAlertConfig({
+          visible: true,
+          type: 'success',
+          title: 'Live Update Available 🚀',
+          message:
+            'A new partner app hotpatch has been uploaded to the cloud. Would you like to download and restart now?',
+          buttons: [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Update & Restart',
+              onPress: async () => {
+                await applyOTAUpdate(true);
+              },
+            },
+          ],
+        });
+      } else {
+        setAlertConfig({
+          visible: true,
+          type: 'success',
+          title: 'App Up to Date 🚀',
+          message:
+            check.message ||
+            'happylokam Partner App v1.0.12 (OTA build: #20261026) is running the latest production updates.',
+        });
+      }
+    } catch (e: any) {
       setCheckingOta(false);
       setAlertConfig({
         visible: true,
         type: 'success',
         title: 'App Up to Date 🚀',
-        message: 'happylokam Partner App v1.0.0 (OTA build: #20261004) is running the latest production updates.',
+        message: 'happylokam Partner App is running the latest production updates.',
       });
-    }, 800);
+    }
   };
 
   const handleLogout = () => {
@@ -79,7 +110,7 @@ export default function SettingsScreen() {
   };
 
   const openSupportWhatsApp = () => {
-    Linking.openURL('https://wa.me/919876543210?text=Hi%20happylokam%20Partner%20Support');
+    Linking.openURL('https://wa.me/918969255561?text=Hi%20happylokam%20Partner%20Support');
   };
 
   return (
@@ -163,7 +194,21 @@ export default function SettingsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Partner WhatsApp Help Desk</Text>
-              <Text style={styles.rowSub}>Direct 24/7 happylokam Support line for vendors & venue partners</Text>
+              <Text style={styles.rowSub}>Direct 24/7 WhatsApp: +91 8969255561</Text>
+            </View>
+            <ChevronRight size={18} color="#64748b" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.navRow, styles.rowBorder]}
+            onPress={() => Linking.openURL('tel:+918969255561')}
+          >
+            <View style={[styles.iconBox, { backgroundColor: 'rgba(56, 189, 248, 0.12)' }]}>
+              <PhoneCall size={18} color="#38bdf8" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>Call Partner Support (+91 8969255561)</Text>
+              <Text style={styles.rowSub}>Dedicated voice helpline for partners & event vendors</Text>
             </View>
             <ChevronRight size={18} color="#64748b" />
           </TouchableOpacity>

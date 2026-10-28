@@ -108,17 +108,17 @@ export default function SignupScreen() {
           {/* Step 1: Personal */}
           {step === 1 && (
             <>
-              <InputField icon={<User size={18} color="#64748b" />} label="Full Name" value={form.name} onChange={(v: string) => update('name', v)} placeholder="Full Name" />
-              <InputField icon={<Mail size={18} color="#64748b" />} label="Email" value={form.email} onChange={(v: string) => update('email', v)} placeholder="name@email.com" keyboard="email-address" />
+              <InputField icon={<User size={18} color="#64748b" />} label="Full Name" value={form.name} onChange={(v: string) => update('name', v)} placeholder="Rishi Kumar" />
+              <InputField icon={<Mail size={18} color="#64748b" />} label="Email" value={form.email} onChange={(v: string) => update('email', v)} placeholder="partner@example.com" keyboard="email-address" />
               <InputField icon={<Lock size={18} color="#64748b" />} label="Password" value={form.password} onChange={(v: string) => update('password', v)} placeholder="Min 6 characters" secure />
-              <InputField icon={<Phone size={18} color="#64748b" />} label="Phone Number" value={form.phone} onChange={(v: string) => update('phone', v)} placeholder="10-digit mobile number" keyboard="phone-pad" maxLen={10} />
+              <InputField icon={<Phone size={18} color="#64748b" />} label="Phone Number" value={form.phone} onChange={(v: string) => update('phone', v)} placeholder="9876543210" keyboard="phone-pad" maxLen={10} />
             </>
           )}
 
           {/* Step 2: Business */}
           {step === 2 && (
             <>
-              <InputField icon={<Briefcase size={18} color="#64748b" />} label="Business Name" value={form.businessName} onChange={(v: string) => update('businessName', v)} placeholder="Business / Venue Name" />
+              <InputField icon={<Briefcase size={18} color="#64748b" />} label="Business Name" value={form.businessName} onChange={(v: string) => update('businessName', v)} placeholder="Royal Palace Banquet" />
               <Text style={styles.catLabel}>Service Categories</Text>
               <View style={styles.catGrid}>
                 {SERVICE_CATEGORIES.map(cat => (
@@ -131,18 +131,18 @@ export default function SignupScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <InputField icon={<User size={18} color="#64748b" />} label="Owner Name" value={form.ownerName} onChange={(v: string) => update('ownerName', v)} placeholder="Owner Name" />
+              <InputField icon={<User size={18} color="#64748b" />} label="Owner Name" value={form.ownerName} onChange={(v: string) => update('ownerName', v)} placeholder="Business owner name" />
             </>
           )}
 
           {/* Step 3: Location, Documents & Referral */}
           {step === 3 && (
             <>
-              <InputField icon={<MapPin size={18} color="#64748b" />} label="City / Location" value={form.location} onChange={(v: string) => update('location', v)} placeholder="City / Location" />
-              <InputField icon={<Building2 size={18} color="#64748b" />} label="Full Address" value={form.city} onChange={(v: string) => update('city', v)} placeholder="Address / Landmark" />
-              <InputField icon={<FileText size={18} color="#64748b" />} label="GST Number (Optional)" value={form.gstNumber} onChange={(v: string) => update('gstNumber', v)} placeholder="GST Number" />
-              <InputField icon={<FileText size={18} color="#64748b" />} label="PAN Number (Optional)" value={form.panNumber} onChange={(v: string) => update('panNumber', v)} placeholder="PAN Number" />
-              <InputField icon={<Gift size={18} color="#60a5fa" />} label="Referral Code (Optional)" value={form.referredByCode} onChange={(v: string) => update('referredByCode', v.toUpperCase())} placeholder="Referral Code" />
+              <InputField icon={<MapPin size={18} color="#64748b" />} label="City / Location" value={form.location} onChange={(v: string) => update('location', v)} placeholder="Patna, Bihar" />
+              <InputField icon={<Building2 size={18} color="#64748b" />} label="Full Address" value={form.city} onChange={(v: string) => update('city', v)} placeholder="Sector 5, Kankarbagh" />
+              <InputField icon={<FileText size={18} color="#64748b" />} label="GST Number (Optional)" value={form.gstNumber} onChange={(v: string) => update('gstNumber', v)} placeholder="22AAAAA0000A1Z5" />
+              <InputField icon={<FileText size={18} color="#64748b" />} label="PAN Number (Optional)" value={form.panNumber} onChange={(v: string) => update('panNumber', v)} placeholder="ABCDE1234F" />
+              <InputField icon={<Gift size={18} color="#60a5fa" />} label="Referral Code (Optional)" value={form.referredByCode} onChange={(v: string) => update('referredByCode', v.toUpperCase())} placeholder="e.g. HLP-ROYA-9X2F" />
             </>
           )}
         </View>
@@ -181,19 +181,8 @@ export default function SignupScreen() {
   );
 }
 
-interface InputFieldProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  onChange: (text: string) => void;
-  placeholder: string;
-  keyboard?: any;
-  secure?: boolean;
-  maxLen?: number;
-}
-
 // Reusable Input Component
-function InputField({ icon, label, value, onChange, placeholder, keyboard, secure, maxLen }: InputFieldProps) {
+function InputField({ icon, label, value, onChange, placeholder, keyboard, secure, maxLen }: any) {
   return (
     <View style={styles.inputGroup}>
       <Text style={styles.label}>{label}</Text>

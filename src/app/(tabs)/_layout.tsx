@@ -1,22 +1,7 @@
-import { useEffect } from 'react';
-import { Tabs, router } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Home, PlusCircle, CalendarCheck, User } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import PartnerDatabase from '../../services/partnerDatabase';
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, 10);
-
-  useEffect(() => {
-    (async () => {
-      const isAuthed = await PartnerDatabase.isAuthenticated();
-      if (!isAuthed) {
-        router.replace('/login');
-      }
-    })();
-  }, []);
-
   return (
     <Tabs
       screenOptions={{
@@ -27,13 +12,14 @@ export default function TabLayout() {
           backgroundColor: '#0d1117',
           borderTopWidth: 1,
           borderTopColor: '#1a202e',
-          elevation: 16,
+          elevation: 12,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.35,
           shadowRadius: 10,
-          height: 60 + bottomInset,
-          paddingBottom: bottomInset,
+          height: undefined,
+          minHeight: 60,
+          paddingBottom: 8,
           paddingTop: 8,
         },
         tabBarLabelStyle: {

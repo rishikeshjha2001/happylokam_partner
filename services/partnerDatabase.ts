@@ -140,6 +140,16 @@ class PartnerDatabase {
     return raw ? JSON.parse(raw) : [];
   }
 
+  async updateService(service: PartnerServiceItem): Promise<void> {
+    const current = await this.getServices();
+    await this.saveServices(current.map((item) => item.id === service.id ? service : item));
+  }
+
+  async deleteService(id: string): Promise<void> {
+    const current = await this.getServices();
+    await this.saveServices(current.filter((item) => item.id !== id));
+  }
+
   // ---- Bookings ----
   async saveBookings(bookings: PartnerBooking[]): Promise<void> {
     await AsyncStorage.setItem(KEYS.BOOKINGS, JSON.stringify(bookings));
@@ -147,6 +157,20 @@ class PartnerDatabase {
 
   async getBookings(): Promise<PartnerBooking[]> {
     const raw = await AsyncStorage.getItem(KEYS.BOOKINGS);
+    return raw ? JSON.parse(raw) : [];
+  }
+
+  async updateBooking(booking: PartnerBooking): Promise<void> {
+    const current = await this.getBookings();
+    await this.saveBookings(current.map((item) => item.id === booking.id ? booking : item));
+  }
+
+  async saveNotifications(notifications: any[]): Promise<void> {
+    await AsyncStorage.setItem(KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+  }
+
+  async getNotifications(): Promise<any[]> {
+    const raw = await AsyncStorage.getItem(KEYS.NOTIFICATIONS);
     return raw ? JSON.parse(raw) : [];
   }
 
