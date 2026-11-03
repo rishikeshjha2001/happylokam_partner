@@ -108,7 +108,7 @@ export default function SignupScreen() {
           {/* Step 1: Personal */}
           {step === 1 && (
             <>
-              <InputField icon={<User size={18} color="#64748b" />} label="Full Name" value={form.name} onChange={(v: string) => update('name', v)} placeholder="Name" />
+              <InputField icon={<User size={18} color="#64748b" />} label="Full Name" value={form.name} onChange={(v: string) => update('name', v)} placeholder="Enter your full name" />
               <InputField icon={<Mail size={18} color="#64748b" />} label="Email" value={form.email} onChange={(v: string) => update('email', v)} placeholder="partner@example.com" keyboard="email-address" />
               <InputField icon={<Lock size={18} color="#64748b" />} label="Password" value={form.password} onChange={(v: string) => update('password', v)} placeholder="Min 6 characters" secure />
               <InputField icon={<Phone size={18} color="#64748b" />} label="Phone Number" value={form.phone} onChange={(v: string) => update('phone', v)} placeholder="9876543210" keyboard="phone-pad" maxLen={10} />
