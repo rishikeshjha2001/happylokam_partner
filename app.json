@@ -2,7 +2,7 @@
   "expo": {
     "name": "happylokam partner",
     "slug": "happylokam-partner",
-    "version": "1.0.27",
+    "version": "1.0.28",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.happylokam.partner",
-      "buildNumber": "27",
+      "buildNumber": "28",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -26,7 +26,7 @@
         "backgroundColor": "#0052FF"
       },
       "package": "com.happylokam.partner",
-      "versionCode": 27,
+      "versionCode": 28,
       "navigationBar": {
         "backgroundColor": "#0d1117",
         "barStyle": "light-content"
@@ -49,7 +49,7 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/91793694-1bba-48c8-b966-69ed2dc26e5e"
     },
-    "runtimeVersion": "1.0.27",
+    "runtimeVersion": "1.0.28",
     "extra": {
       "router": {
         "origin": false
