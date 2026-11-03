@@ -73,13 +73,14 @@ export default function BookingDetailsScreen() {
         visible: true,
         type: 'info',
         title: 'Customer Contact',
-        message: 'Phone: +91 98490 55443',
+        message: 'No phone number provided by customer.',
       });
     }
   };
 
   const handleWhatsApp = () => {
-    const phone = booking.user?.phone?.replace(/[^0-9]/g, '') || '919849055443';
+    const phone = booking.user?.phone?.replace(/[^0-9]/g, '');
+    if (!phone) { setAlertConfig({ visible: true, type: 'info', title: 'WhatsApp Contact', message: 'No phone number provided by customer.' }); return; }
     const text = `Hello ${booking.user?.name || 'Customer'}, regarding your booking for ${booking.venue?.name || 'happylokam Service'} on ${booking.date}...`;
     Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`);
   };
@@ -326,7 +327,7 @@ export default function BookingDetailsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.customerName}>{booking.user?.name || 'Customer'}</Text>
               <Text style={styles.customerEmail}>{booking.user?.email || 'customer@happylokam.com'}</Text>
-              <Text style={styles.customerPhone}>{booking.user?.phone || '+91 98490 55443'}</Text>
+              <Text style={styles.customerPhone}>{booking.user?.phone || 'No phone provided'}</Text>
             </View>
           </View>
 
@@ -347,15 +348,15 @@ export default function BookingDetailsScreen() {
           <Text style={styles.cardHeaderTitle}>Payment & Price Summary</Text>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Base Service Rate</Text>
-            <Text style={styles.priceVal}>₹{(booking.baseAmount || 75000).toLocaleString('en-IN')}</Text>
+            <Text style={styles.priceVal}>₹{(booking.baseAmount || booking.totalAmount || 0).toLocaleString('en-IN')}</Text>
           </View>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Platform Convenience (5%)</Text>
-            <Text style={styles.priceVal}>₹{(booking.platformFee || 3750).toLocaleString('en-IN')}</Text>
+            <Text style={styles.priceVal}>₹{(booking.platformFee || 0).toLocaleString('en-IN')}</Text>
           </View>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>GST / Taxes (18%)</Text>
-            <Text style={styles.priceVal}>₹{(booking.taxAmount || 13500).toLocaleString('en-IN')}</Text>
+            <Text style={styles.priceVal}>₹{(booking.taxAmount || 0).toLocaleString('en-IN')}</Text>
           </View>
           <View style={[styles.priceRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total Booking Amount</Text>

@@ -67,6 +67,7 @@ export default function EditServiceScreen() {
   const [capacity, setCapacity] = useState('');
   const [city, setCity] = useState('');
   const [location, setLocation] = useState('');
+  const [mapUrl, setMapUrl] = useState('');
   const [description, setDescription] = useState('');
   const [featureInput, setFeatureInput] = useState('');
   const [features, setFeatures] = useState<string[]>([]);
@@ -167,6 +168,7 @@ export default function EditServiceScreen() {
     setCapacity(item.capacity ? String(item.capacity) : '');
     setCity(item.city || '');
     setLocation(item.location || '');
+    setMapUrl(item.mapUrl || '');
     setDescription(item.description || '');
     setFeatures(item.features || []);
     setIsActive(item.isActive !== false);
@@ -229,6 +231,7 @@ export default function EditServiceScreen() {
         capacity: capacity ? parseInt(capacity) : undefined,
         city: city.trim() || 'Hyderabad',
         location: location.trim() || city.trim() || 'Hyderabad',
+        mapUrl: mapUrl.trim() || undefined,
         features,
         isActive,
       };
@@ -384,7 +387,7 @@ export default function EditServiceScreen() {
               style={styles.textInput}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Royal Palace Banquet & Lawn"
+              placeholder="e.g. Grand Celebration Lawn"
               placeholderTextColor="#64748b"
             />
           </View>

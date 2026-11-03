@@ -114,8 +114,8 @@ android {
         applicationId 'com.happylokam.partner'
         minSdkVersion 24
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 18
-        versionName "1.0.18"
+        versionCode 26
+        versionName "1.0.26"
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
@@ -220,3 +220,27 @@ if (rnVersion < versionToNumber(0, 75, 0)) {
 }
 
 
+
+tasks.matching { it.name == 'stripReleaseDebugSymbols' }.configureEach {
+    doLast {
+        def scriptFile = new File(project.rootDir, "patch_elf_16kb.js")
+        if (scriptFile.exists()) {
+            println "[16KB-ALIGN] Running 16KB alignment patch on native libs after stripReleaseDebugSymbols..."
+            project.exec {
+                commandLine 'cmd', '/c', 'node', scriptFile.absolutePath, "${buildDir}/intermediates"
+            }
+        }
+    }
+}
+
+tasks.matching { it.name == 'buildReleasePreBundle' }.configureEach {
+    doFirst {
+        def scriptFile = new File(project.rootDir, "patch_elf_16kb.js")
+        if (scriptFile.exists()) {
+            println "[16KB-ALIGN] Running 16KB alignment patch on native libs before buildReleasePreBundle..."
+            project.exec {
+                commandLine 'cmd', '/c', 'node', scriptFile.absolutePath, "${buildDir}/intermediates"
+            }
+        }
+    }
+}

@@ -11,6 +11,8 @@ android/app/build/
 android/.gradle/
 android/app/.cxx/
 android/.cxx/
+android/**/bin/
+bin/
 *.apk
 *.aab
 *.keystore

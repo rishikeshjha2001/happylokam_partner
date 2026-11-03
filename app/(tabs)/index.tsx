@@ -154,7 +154,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/edit-profile')}>
             <Text style={styles.greeting}>Welcome back 👋</Text>
-            <Text style={styles.name}>{session?.name || 'Royal Palace Events'}</Text>
+            <Text style={styles.name}>{session?.businessName || session?.name || 'Partner Account'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.bellBtn}
@@ -182,7 +182,7 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <View style={styles.hlpBadge}>
-            <Text style={styles.hlpText}>{session?.hlpId || 'HLP-89234'}</Text>
+            <Text style={styles.hlpText}>{session?.hlpId || 'HLP Pending'}</Text>
           </View>
           <ChevronRight size={16} color="#64748b" />
         </TouchableOpacity>
@@ -192,7 +192,7 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={[styles.revenueCard, { backgroundColor: '#0f1a2e' }]}
             activeOpacity={0.85}
-            onPress={() => router.push('/wallet')}
+            onPress={() => router.push('/(tabs)/bookings')}
           >
             <View style={styles.revenueCardHeader}>
               <View style={styles.revenueIconBox}>
@@ -202,14 +202,14 @@ export default function DashboardScreen() {
             </View>
             <Text style={styles.revenueLabel}>Total Revenue</Text>
             <Text style={styles.revenueAmount}>
-              ₹{(stats?.totalRevenue || 142500).toLocaleString('en-IN')}
+              ₹{(stats?.totalRevenue ?? 0).toLocaleString('en-IN')}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.revenueCard, { backgroundColor: '#0d1a17' }]}
             activeOpacity={0.85}
-            onPress={() => router.push('/wallet')}
+            onPress={() => router.push('/(tabs)/bookings')}
           >
             <View style={styles.revenueCardHeader}>
               <View
@@ -224,7 +224,7 @@ export default function DashboardScreen() {
             </View>
             <Text style={styles.revenueLabel}>This Month</Text>
             <Text style={[styles.revenueAmount, { color: '#34d399' }]}>
-              ₹{(stats?.monthlyRevenue || 38200).toLocaleString('en-IN')}
+              ₹{(stats?.monthlyRevenue ?? 0).toLocaleString('en-IN')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -234,28 +234,28 @@ export default function DashboardScreen() {
           <StatCard
             icon={CalendarCheck}
             label="Total Bookings"
-            value={stats?.totalBookings || 18}
+            value={stats?.totalBookings ?? 0}
             color="#60a5fa"
             onPress={() => router.push('/(tabs)/bookings')}
           />
           <StatCard
             icon={Clock}
             label="Pending Action"
-            value={stats?.pendingBookings || 3}
+            value={stats?.pendingBookings ?? 0}
             color="#fbbf24"
             onPress={() => router.push('/(tabs)/bookings')}
           />
           <StatCard
             icon={Package}
             label="Services"
-            value={stats?.totalServices || 6}
+            value={stats?.totalServices ?? 0}
             color="#a78bfa"
             onPress={() => router.push('/(tabs)/services')}
           />
           <StatCard
             icon={Star}
             label="Active Listings"
-            value={stats?.activeServices || 5}
+            value={stats?.activeServices ?? 0}
             color="#34d399"
             onPress={() => router.push('/(tabs)/services')}
           />
@@ -289,23 +289,23 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={styles.actionCard}
             activeOpacity={0.85}
-            onPress={() => router.push('/wallet')}
+            onPress={() => router.push('/(tabs)/services')}
           >
             <View style={[styles.actionIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-              <Wallet size={20} color="#c084fc" />
+              <Briefcase size={20} color="#c084fc" />
             </View>
-            <Text style={styles.actionText}>Wallet</Text>
+            <Text style={styles.actionText}>My Services</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionCard}
             activeOpacity={0.85}
-            onPress={() => router.push('/referrals')}
+            onPress={() => router.push('/kyc')}
           >
-            <View style={[styles.actionIcon, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
-              <Gift size={20} color="#fbbf24" />
+            <View style={[styles.actionIcon, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+              <ShieldCheck size={20} color="#38bdf8" />
             </View>
-            <Text style={styles.actionText}>Refer ₹500</Text>
+            <Text style={styles.actionText}>KYC & Bank</Text>
           </TouchableOpacity>
         </View>
 
@@ -317,45 +317,53 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {recentBookings.map((b: any) => (
-          <TouchableOpacity
-            key={b.id}
-            style={styles.bookingCard}
-            activeOpacity={0.85}
-            onPress={() => router.push({ pathname: '/booking-details', params: { id: b.id } })}
-          >
-            <View style={styles.bookingLeft}>
-              <Text style={styles.bookingCustomer}>{b.user?.name || 'Customer'}</Text>
-              <Text style={styles.bookingVenue}>{b.venue?.name || 'Grand Ballroom'}</Text>
-              <Text style={styles.bookingDate}>
-                {new Date(b.createdAt).toLocaleDateString('en-IN')}
-              </Text>
-            </View>
-            <View style={styles.bookingRight}>
-              <Text style={styles.bookingAmount}>₹{(b.totalAmount || 0).toLocaleString('en-IN')}</Text>
-              <View
-                style={[
-                  styles.bookingStatusPill,
-                  {
-                    backgroundColor:
-                      b.status === 'CONFIRMED'
-                        ? 'rgba(52,211,153,0.15)'
-                        : 'rgba(251,191,36,0.15)',
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.bookingStatusText,
-                    { color: b.status === 'CONFIRMED' ? '#34d399' : '#fbbf24' },
-                  ]}
-                >
-                  {b.status}
+        {recentBookings.length === 0 ? (
+          <View style={[styles.bookingCard, { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 }]}>
+            <Text style={{ color: '#94a3b8', fontSize: 13, fontWeight: '500', textAlign: 'center' }}>
+              No bookings yet. Customer orders for your venues & services will appear here in real time.
+            </Text>
+          </View>
+        ) : (
+          recentBookings.map((b: any) => (
+            <TouchableOpacity
+              key={b.id}
+              style={styles.bookingCard}
+              activeOpacity={0.85}
+              onPress={() => router.push({ pathname: '/booking-details', params: { id: b.id } })}
+            >
+              <View style={styles.bookingLeft}>
+                <Text style={styles.bookingCustomer}>{b.user?.name || 'Customer'}</Text>
+                <Text style={styles.bookingVenue}>{b.venue?.name || b.service?.title || 'Direct Booking'}</Text>
+                <Text style={styles.bookingDate}>
+                  {b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-IN') : 'Recent'}
                 </Text>
               </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+              <View style={styles.bookingRight}>
+                <Text style={styles.bookingAmount}>₹{(b.totalAmount || 0).toLocaleString('en-IN')}</Text>
+                <View
+                  style={[
+                    styles.bookingStatusPill,
+                    {
+                      backgroundColor:
+                        b.status === 'CONFIRMED'
+                          ? 'rgba(52,211,153,0.15)'
+                          : 'rgba(251,191,36,0.15)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.bookingStatusText,
+                      { color: b.status === 'CONFIRMED' ? '#34d399' : '#fbbf24' },
+                    ]}
+                  >
+                    {b.status || 'PENDING'}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -549,4 +557,26 @@ const styles = StyleSheet.create({
   bookingAmount: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
   bookingStatusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
   bookingStatusText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  emptyBookingsCard: {
+    backgroundColor: '#0d1117',
+    borderRadius: 14,
+    padding: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#1c2333',
+    marginBottom: 10,
+    gap: 8,
+  },
+  emptyBookingsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#e2e8f0',
+  },
+  emptyBookingsSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    maxWidth: 260,
+  },
 });

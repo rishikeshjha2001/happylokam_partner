@@ -3,11 +3,11 @@ import { StatusBar } from 'react-native';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { checkAndApplyOTAUpdates } from '../services/otaService';
+import PartnerDatabase from '../services/partnerDatabase';
 
 export default function RootLayout() {
   useEffect(() => {
-    // Expo has already loaded the embedded bundle. A compatible update is
-    // fetched and activated before partners begin using the dashboard.
+    void PartnerDatabase.migrateOperationalCache('2026-11-02-fresh-start-reset');
     void checkAndApplyOTAUpdates();
   }, []);
 

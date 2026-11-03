@@ -71,6 +71,7 @@ export default function AddServiceScreen() {
   const [availableCities, setAvailableCities] = useState('Hyderabad, Secunderabad, Gachibowli, Jubilee Hills');
   const [location, setLocation] = useState('');
   const [features, setFeatures] = useState('');
+  const [mapUrl, setMapUrl] = useState('');
 
   // Customizable Tier Packages
   const [packages, setPackages] = useState<PartnerServicePackage[]>([
@@ -185,6 +186,7 @@ export default function AddServiceScreen() {
         city: city.trim() || 'Hyderabad',
         availableCities: citiesList.length > 0 ? citiesList : [city.trim() || 'Hyderabad'],
         location: location.trim() || city.trim() || 'Hyderabad',
+        mapUrl: mapUrl.trim() || undefined,
         features: featureList,
         packages,
       };
@@ -485,6 +487,18 @@ export default function AddServiceScreen() {
           value={location}
           onChangeText={setLocation}
         />
+
+        {/* Google Maps Directions Link */}
+        <Text style={styles.label}>Google Maps Directions Link (Optional)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. https://maps.app.goo.gl/... or https://google.com/maps?q=..."
+          placeholderTextColor="#64748b"
+          value={mapUrl}
+          onChangeText={setMapUrl}
+          autoCapitalize="none"
+        />
+        <Text style={styles.hintText}>Enables customer "See Location on Google Maps" button</Text>
 
         {/* ==================================================== */}
         {/* CUSTOM PACKAGES LIST & CREATOR                      */}

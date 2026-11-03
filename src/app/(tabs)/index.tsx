@@ -154,7 +154,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/edit-profile')}>
             <Text style={styles.greeting}>Welcome back 👋</Text>
-            <Text style={styles.name}>{session?.name || 'Royal Palace Events'}</Text>
+            <Text style={styles.name}>{session?.businessName || session?.name || 'Partner Account'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.bellBtn}
@@ -182,7 +182,7 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <View style={styles.hlpBadge}>
-            <Text style={styles.hlpText}>{session?.hlpId || 'HLP-89234'}</Text>
+            <Text style={styles.hlpText}>{session?.hlpId || 'HLP Pending'}</Text>
           </View>
           <ChevronRight size={16} color="#64748b" />
         </TouchableOpacity>
@@ -192,7 +192,7 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={[styles.revenueCard, { backgroundColor: '#0f1a2e' }]}
             activeOpacity={0.85}
-            onPress={() => router.push('/wallet')}
+            onPress={() => router.push('/(tabs)/bookings')}
           >
             <View style={styles.revenueCardHeader}>
               <View style={styles.revenueIconBox}>
@@ -202,14 +202,14 @@ export default function DashboardScreen() {
             </View>
             <Text style={styles.revenueLabel}>Total Revenue</Text>
             <Text style={styles.revenueAmount}>
-              ₹{(stats?.totalRevenue || 142500).toLocaleString('en-IN')}
+              ₹{(stats?.totalRevenue ?? 0).toLocaleString('en-IN')}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.revenueCard, { backgroundColor: '#0d1a17' }]}
             activeOpacity={0.85}
-            onPress={() => router.push('/wallet')}
+            onPress={() => router.push('/(tabs)/bookings')}
           >
             <View style={styles.revenueCardHeader}>
               <View
@@ -224,7 +224,7 @@ export default function DashboardScreen() {
             </View>
             <Text style={styles.revenueLabel}>This Month</Text>
             <Text style={[styles.revenueAmount, { color: '#34d399' }]}>
-              ₹{(stats?.monthlyRevenue || 38200).toLocaleString('en-IN')}
+              ₹{(stats?.monthlyRevenue ?? 0).toLocaleString('en-IN')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -234,28 +234,28 @@ export default function DashboardScreen() {
           <StatCard
             icon={CalendarCheck}
             label="Total Bookings"
-            value={stats?.totalBookings || 18}
+            value={stats?.totalBookings ?? 0}
             color="#60a5fa"
             onPress={() => router.push('/(tabs)/bookings')}
           />
           <StatCard
             icon={Clock}
             label="Pending Action"
-            value={stats?.pendingBookings || 3}
+            value={stats?.pendingBookings ?? 0}
             color="#fbbf24"
             onPress={() => router.push('/(tabs)/bookings')}
           />
           <StatCard
             icon={Package}
             label="Services"
-            value={stats?.totalServices || 6}
+            value={stats?.totalServices ?? 0}
             color="#a78bfa"
             onPress={() => router.push('/(tabs)/services')}
           />
           <StatCard
             icon={Star}
             label="Active Listings"
-            value={stats?.activeServices || 5}
+            value={stats?.activeServices ?? 0}
             color="#34d399"
             onPress={() => router.push('/(tabs)/services')}
           />
@@ -289,12 +289,12 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={styles.actionCard}
             activeOpacity={0.85}
-            onPress={() => router.push('/wallet')}
+            onPress={() => router.push('/(tabs)/bookings')}
           >
             <View style={[styles.actionIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-              <Wallet size={20} color="#c084fc" />
+              <Briefcase size={20} color="#c084fc" />
             </View>
-            <Text style={styles.actionText}>Wallet</Text>
+            <Text style={styles.actionText}>My Services</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
-  Share,
   BackHandler,
   Linking,
 } from 'react-native';
@@ -20,25 +19,18 @@ import {
   Phone,
   Mail,
   ShieldCheck,
-  Award,
-  Copy,
-  Share2,
-  Gift,
   CreditCard,
   FileText,
   LogOut,
   RefreshCw,
-  Sparkles,
   ChevronRight,
   Clock,
   CheckCircle2,
   AlertCircle,
-  Users,
   Settings,
   Edit3,
-  ExternalLink,
-  HelpCircle,
-  Wallet,
+  Package,
+  CalendarCheck,
 } from 'lucide-react-native';
 import { PARTNER_API } from '../../constants/api';
 import PartnerDatabase, { PartnerSession } from '../../services/partnerDatabase';
@@ -46,12 +38,10 @@ import ExitConfirmModal from '../../components/ExitConfirmModal';
 import CustomAlert, { CustomAlertOptions } from '../../components/CustomAlert';
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState<any>(null);
-  const [referralData, setReferralData] = useState<any>(null);
+  const [profile, setProfile] = useState<PartnerSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingOta, setCheckingOta] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [alertConfig, setAlertConfig] = useState<CustomAlertOptions | null>(null);
 
@@ -67,64 +57,32 @@ export default function ProfileScreen() {
     }, [])
   );
 
-  const fetchProfileAndReferrals = useCallback(async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const session = await PartnerDatabase.getSession();
-      
-      const defaultProf = session || {
-        id: 'hlp-10928',
-        hlpId: 'HLP-10928',
-        name: 'Vikramaditya Rao',
-        businessName: 'Royal Palace Events',
-        email: 'vikram@royalpalace.com',
-        phone: '+91 98490 11223',
-        status: 'VERIFIED',
-        isVerified: true,
-        walletBalance: 24500,
-        referralCode: 'HLPROYAL89',
-        bankAccount: 'HDFC Bank ••••••4920',
-        gstNumber: '36AAACH7409R1Z4',
-        panNumber: 'AAACH7409R',
-      };
-
-      setProfile(defaultProf);
-      setReferralData({
-        referralCode: defaultProf.referralCode || 'HLPROYAL89',
-        totalReferred: 3,
-        activeReferred: 2,
-        walletBalance: defaultProf.walletBalance || 24500,
-        bonusPerReferral: 500,
-      });
+      setProfile(session || null);
 
       if (session?.token) {
-        // Quick network fetch if backend is available
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 2000);
+          const timer = setTimeout(() => controller.abort(), 2500);
 
-          const [resProf, resRef] = await Promise.all([
-            fetch(`${PARTNER_API}/me`, {
-              headers: { Authorization: `Bearer ${session.token}` },
-              signal: controller.signal,
-            }),
-            fetch(`${PARTNER_API}/referrals`, {
-              headers: { Authorization: `Bearer ${session.token}` },
-              signal: controller.signal,
-            }),
-          ]);
+          const resProf = await fetch(`${PARTNER_API}/me`, {
+            headers: { Authorization: `Bearer ${session.token}` },
+            signal: controller.signal,
+          });
           clearTimeout(timer);
 
-          const [rawProf, rawRef] = await Promise.all([resProf.text(), resRef.text()]);
+          const rawProf = await resProf.text();
           if (rawProf.startsWith('{')) {
             const jsonProf = JSON.parse(rawProf);
-            if (jsonProf.success && jsonProf.data) setProfile(jsonProf.data);
-          }
-          if (rawRef.startsWith('{')) {
-            const jsonRef = JSON.parse(rawRef);
-            if (jsonRef.success && jsonRef.data) setReferralData(jsonRef.data);
+            if (jsonProf.success && jsonProf.data) {
+              setProfile(jsonProf.data);
+              await PartnerDatabase.saveSession(jsonProf.data);
+            }
           }
         } catch (netErr) {
-          // Offline / timeout
+          // Offline
         }
       }
     } catch (e) {
@@ -136,44 +94,14 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => {
-    fetchProfileAndReferrals();
-  }, [fetchProfileAndReferrals]);
+    fetchProfile();
+  }, [fetchProfile]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchProfileAndReferrals();
+    fetchProfile();
   };
 
-  const handleCopyReferralCode = async (code: string) => {
-    try {
-      await Share.share({
-        title: 'Partner Referral Code',
-        message: code,
-      });
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch (e) {
-      setAlertConfig({
-        type: 'info',
-        title: 'Referral Code',
-        message: `Your code is ${code}`,
-      });
-    }
-  };
-
-  const handleShareReferral = async (code: string) => {
-    try {
-      const shareUrl = `https://happylokam.com/partner/signup?ref=${code}`;
-      await Share.share({
-        title: 'Join happylokam as a Partner',
-        message: `Join me as a business partner on happylokam and grow your event bookings! Use my referral code: ${code}\nSign up here: ${shareUrl}`,
-      });
-    } catch (e) {
-      console.log('Share error:', e);
-    }
-  };
-
-  // React Native OTA Updates Check
   const handleCheckOtaUpdate = async () => {
     try {
       setCheckingOta(true);
@@ -181,10 +109,10 @@ export default function ProfileScreen() {
         setCheckingOta(false);
         setAlertConfig({
           type: 'success',
-          title: 'OTA Channel Connected',
-          message: 'happylokam Partner App is synchronized with the latest cloud bundle (v2.4.0). You are running the newest version.',
+          title: 'Latest Version Installed',
+          message: 'happylokam Partner App is synchronized with the latest cloud release (v1.0.25).',
         });
-      }, 1000);
+      }, 700);
     } catch (e: any) {
       setCheckingOta(false);
     }
@@ -204,10 +132,7 @@ export default function ProfileScreen() {
     });
   };
 
-  const referralCode = referralData?.referralCode || profile?.referralCode || 'HLPROYAL89';
-  const totalReferred = referralData?.totalReferred || 3;
-  const activeReferred = referralData?.activeReferred || 2;
-  const walletBalance = referralData?.walletBalance ?? (profile?.walletBalance || 1500);
+  const isVerified = profile?.status === 'VERIFIED' || profile?.isVerified === true;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -217,7 +142,7 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Partner Profile</Text>
-          <Text style={styles.headerSub}>Account info, business KYC & quick settings</Text>
+          <Text style={styles.headerSub}>Account verification & business settings</Text>
         </View>
         <TouchableOpacity
           style={styles.settingsBtn}
@@ -242,34 +167,42 @@ export default function ProfileScreen() {
             {/* Profile Overview Card */}
             <View style={styles.profileCard}>
               <View style={styles.profileAvatar}>
-                <Building2 size={30} color="#93c5fd" />
+                <Building2 size={28} color="#93c5fd" />
               </View>
 
               <View style={styles.profileInfo}>
                 <View style={styles.businessTitleRow}>
-                  <Text style={styles.businessName}>{profile?.businessName || 'Royal Heritage Events'}</Text>
-                  {profile?.isVerified ? (
+                  <Text style={styles.businessName}>
+                    {profile?.businessName || profile?.name || 'Partner Account'}
+                  </Text>
+                  {isVerified ? (
                     <ShieldCheck size={18} color="#4ade80" />
                   ) : (
                     <Clock size={16} color="#fbbf24" />
                   )}
                 </View>
 
-                <Text style={styles.hlpIdBadge}>{profile?.hlpId || 'HLP-10928'}</Text>
+                <Text style={styles.hlpIdBadge}>{profile?.hlpId || 'HLP Account'}</Text>
 
                 <View style={styles.contactRow}>
                   <User size={13} color="#94a3b8" />
-                  <Text style={styles.contactText}>{profile?.ownerName || profile?.name || 'Vikramaditya Rao'}</Text>
+                  <Text style={styles.contactText}>
+                    {profile?.ownerName || profile?.name || 'Partner'}
+                  </Text>
                 </View>
 
                 <View style={styles.contactRow}>
                   <Mail size={13} color="#94a3b8" />
-                  <Text style={styles.contactText}>{profile?.email || 'vikram@royalheritage.com'}</Text>
+                  <Text style={styles.contactText}>
+                    {profile?.email || 'No email registered'}
+                  </Text>
                 </View>
 
                 <View style={styles.contactRow}>
                   <Phone size={13} color="#94a3b8" />
-                  <Text style={styles.contactText}>{profile?.phone || '+91 98490 11223'}</Text>
+                  <Text style={styles.contactText}>
+                    {profile?.phone || 'No phone registered'}
+                  </Text>
                 </View>
               </View>
 
@@ -287,13 +220,13 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 style={styles.quickCard}
                 activeOpacity={0.8}
-                onPress={() => router.push('/wallet')}
+                onPress={() => router.push('/(tabs)/services')}
               >
                 <View style={[styles.quickIconBox, { backgroundColor: '#1e3a8a30' }]}>
-                  <Wallet size={20} color="#60a5fa" />
+                  <Package size={20} color="#60a5fa" />
                 </View>
-                <Text style={styles.quickTitle}>Wallet</Text>
-                <Text style={styles.quickSub}>₹{walletBalance.toLocaleString('en-IN')}</Text>
+                <Text style={styles.quickTitle}>My Services</Text>
+                <Text style={styles.quickSub}>Manage</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -304,20 +237,22 @@ export default function ProfileScreen() {
                 <View style={[styles.quickIconBox, { backgroundColor: '#064e3b30' }]}>
                   <ShieldCheck size={20} color="#34d399" />
                 </View>
-                <Text style={styles.quickTitle}>KYC Audit</Text>
-                <Text style={[styles.quickSub, { color: '#34d399' }]}>Verified</Text>
+                <Text style={styles.quickTitle}>Bank KYC</Text>
+                <Text style={[styles.quickSub, { color: isVerified ? '#34d399' : '#fbbf24' }]}>
+                  {isVerified ? 'Verified' : 'Pending'}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.quickCard}
                 activeOpacity={0.8}
-                onPress={() => router.push('/referrals')}
+                onPress={() => router.push('/(tabs)/bookings')}
               >
-                <View style={[styles.quickIconBox, { backgroundColor: '#78350f30' }]}>
-                  <Gift size={20} color="#fbbf24" />
+                <View style={[styles.quickIconBox, { backgroundColor: '#4c1d9530' }]}>
+                  <CalendarCheck size={20} color="#c084fc" />
                 </View>
-                <Text style={styles.quickTitle}>Referrals</Text>
-                <Text style={[styles.quickSub, { color: '#fbbf24' }]}>₹500 Bonus</Text>
+                <Text style={styles.quickTitle}>Bookings</Text>
+                <Text style={[styles.quickSub, { color: '#c084fc' }]}>Live Orders</Text>
               </TouchableOpacity>
             </View>
 
@@ -325,103 +260,30 @@ export default function ProfileScreen() {
             <View
               style={[
                 styles.statusNotice,
-                profile?.status === 'VERIFIED'
-                  ? styles.statusNoticeVerified
-                  : styles.statusNoticePending,
+                isVerified ? styles.statusNoticeVerified : styles.statusNoticePending,
               ]}
             >
-              {profile?.status === 'VERIFIED' ? (
+              {isVerified ? (
                 <>
                   <CheckCircle2 size={18} color="#4ade80" />
                   <Text style={[styles.statusNoticeText, { color: '#4ade80' }]}>
-                    Your account is Verified & Active. Your listings are live on the happylokam customer app.
+                    Your account is Verified & Active. Your listings are live on the happylokam platform.
                   </Text>
                 </>
               ) : (
                 <>
                   <AlertCircle size={18} color="#fbbf24" />
                   <Text style={[styles.statusNoticeText, { color: '#fbbf24' }]}>
-                    Account Status: Verified & Approved. All payout and booking features are operational.
+                    Account Status: Under Review. Complete your Bank KYC details below to receive customer payouts.
                   </Text>
                 </>
               )}
             </View>
 
-            {/* REFERRAL SYSTEM SECTION */}
-            <View style={styles.referralCard}>
-              <View style={styles.referralHeader}>
-                <View style={styles.referralIconBox}>
-                  <Gift size={22} color="#60a5fa" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.referralTitle}>Partner Referral Program</Text>
-                  <Text style={styles.referralSub}>
-                    Earn <Text style={{ color: '#4ade80', fontWeight: '800' }}>₹500</Text> in your wallet for every partner who registers with your code!
-                  </Text>
-                </View>
-              </View>
-
-              {/* Referral Code Box */}
-              <View style={styles.codeContainer}>
-                <View>
-                  <Text style={styles.codeLabel}>YOUR UNIQUE REFERRAL CODE</Text>
-                  <Text style={styles.codeText}>{referralCode}</Text>
-                </View>
-
-                <View style={styles.codeActions}>
-                  <TouchableOpacity
-                    style={styles.actionIconBtn}
-                    onPress={() => handleCopyReferralCode(referralCode)}
-                  >
-                    <Copy size={15} color="#60a5fa" />
-                    <Text style={styles.actionIconText}>{copied ? 'Copied' : 'Copy'}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.actionIconBtn, styles.shareIconBtn]}
-                    onPress={() => handleShareReferral(referralCode)}
-                  >
-                    <Share2 size={15} color="#ffffff" />
-                    <Text style={[styles.actionIconText, { color: '#ffffff' }]}>Share</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Referral Stats Grid */}
-              <View style={styles.referralStatsGrid}>
-                <View style={styles.referralStatBox}>
-                  <Users size={16} color="#94a3b8" />
-                  <Text style={styles.refStatValue}>{totalReferred}</Text>
-                  <Text style={styles.refStatLabel}>Total Invited</Text>
-                </View>
-
-                <View style={styles.referralStatBox}>
-                  <ShieldCheck size={16} color="#4ade80" />
-                  <Text style={[styles.refStatValue, { color: '#4ade80' }]}>{activeReferred}</Text>
-                  <Text style={styles.refStatLabel}>Verified</Text>
-                </View>
-
-                <View style={styles.referralStatBox}>
-                  <Award size={16} color="#fbbf24" />
-                  <Text style={[styles.refStatValue, { color: '#fbbf24' }]}>₹{walletBalance}</Text>
-                  <Text style={styles.refStatLabel}>Rewards</Text>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={styles.viewAllRefBtn}
-                onPress={() => router.push('/referrals')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.viewAllRefText}>Manage Full Referral Program</Text>
-                <ChevronRight size={14} color="#60a5fa" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Business & Bank Details */}
+            {/* Business Verification & Bank Details */}
             <View style={styles.sectionBox}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionBoxTitle}>Business Verification & Tax</Text>
+                <Text style={styles.sectionBoxTitle}>Business Verification & Bank</Text>
                 <TouchableOpacity onPress={() => router.push('/kyc')}>
                   <Text style={styles.sectionHeaderLink}>Edit</Text>
                 </TouchableOpacity>
@@ -431,7 +293,11 @@ export default function ProfileScreen() {
                 <CreditCard size={16} color="#94a3b8" />
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>Bank Account</Text>
-                  <Text style={styles.infoVal}>{profile?.bankAccount || 'HDFC Bank ••••••4920'}</Text>
+                  <Text style={styles.infoVal}>
+                    {profile?.bankAccount
+                      ? `•••• ${profile.bankAccount.slice(-4)}`
+                      : 'Not Added (Tap Edit to configure)'}
+                  </Text>
                 </View>
               </View>
 
@@ -439,7 +305,7 @@ export default function ProfileScreen() {
                 <FileText size={16} color="#94a3b8" />
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>GST Number</Text>
-                  <Text style={styles.infoVal}>{profile?.gstNumber || '36AAACH7409R1Z4'}</Text>
+                  <Text style={styles.infoVal}>{profile?.gstNumber || 'Optional / Not Provided'}</Text>
                 </View>
               </View>
 
@@ -447,12 +313,12 @@ export default function ProfileScreen() {
                 <FileText size={16} color="#94a3b8" />
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>PAN Number</Text>
-                  <Text style={styles.infoVal}>{profile?.panNumber || 'AAACH7409R'}</Text>
+                  <Text style={styles.infoVal}>{profile?.panNumber || 'Optional / Not Provided'}</Text>
                 </View>
               </View>
             </View>
 
-            {/* App Settings & OTA Updates */}
+            {/* System & Controls */}
             <View style={styles.sectionBox}>
               <Text style={styles.sectionBoxTitle}>System & Controls</Text>
 
@@ -495,8 +361,8 @@ export default function ProfileScreen() {
                 <View style={styles.menuItemLeft}>
                   <RefreshCw size={18} color="#34d399" />
                   <View>
-                    <Text style={styles.menuItemText}>Check for OTA Updates</Text>
-                    <Text style={styles.menuItemSub}>React Native live bundle synchronizer</Text>
+                    <Text style={styles.menuItemText}>App Version & Updates</Text>
+                    <Text style={styles.menuItemSub}>Version 1.0.25 • Check for cloud updates</Text>
                   </View>
                 </View>
                 {checkingOta ? (
@@ -532,7 +398,7 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* Exit Confirm Modal & Custom Alert */}
-      <ExitConfirmModal visible={showExitModal} onClose={() => setShowExitModal(false)} />
+      <ExitConfirmModal visible={showExitModal} onCancel={() => setShowExitModal(false)} />
       <CustomAlert config={alertConfig} onClose={() => setAlertConfig(null)} />
     </SafeAreaView>
   );
@@ -597,9 +463,9 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   profileAvatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 14,
     backgroundColor: '#1e3a8a',
     alignItems: 'center',
     justifyContent: 'center',
@@ -698,122 +564,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '600',
   },
-  referralCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    padding: 16,
-    marginTop: 14,
-  },
-  referralHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 14,
-  },
-  referralIconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  referralTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  referralSub: {
-    fontSize: 12,
-    color: '#94a3b8',
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#070a12',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  codeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#64748b',
-    letterSpacing: 0.5,
-  },
-  codeText: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#60a5fa',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  codeActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionIconBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#1e293b',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  shareIconBtn: {
-    backgroundColor: '#2563eb',
-  },
-  actionIconText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#60a5fa',
-  },
-  referralStatsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 12,
-  },
-  referralStatBox: {
-    flex: 1,
-    backgroundColor: '#070a12',
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  refStatValue: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#ffffff',
-    marginTop: 4,
-  },
-  refStatLabel: {
-    fontSize: 10,
-    color: '#94a3b8',
-    marginTop: 2,
-  },
-  viewAllRefBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    marginTop: 12,
-    paddingVertical: 6,
-  },
-  viewAllRefText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#60a5fa',
-  },
   sectionBox: {
     backgroundColor: '#0f172a',
     borderRadius: 18,
@@ -876,14 +626,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuItemText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: '#f8fafc',
   },
   menuItemSub: {
     fontSize: 11,
     color: '#64748b',
-    marginTop: 1,
+    marginTop: 2,
   },
   logoutBtn: {
     flexDirection: 'row',
@@ -892,14 +642,14 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#1f1315',
     borderWidth: 1,
-    borderColor: '#7f1d1d',
+    borderColor: '#7f1d1d40',
     borderRadius: 14,
     paddingVertical: 14,
     marginTop: 20,
   },
   logoutBtnText: {
-    color: '#ef4444',
     fontSize: 14,
     fontWeight: '700',
+    color: '#ef4444',
   },
 });

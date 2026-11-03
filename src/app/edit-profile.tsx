@@ -52,8 +52,8 @@ export default function EditProfileScreen() {
         setOwnerName(session.ownerName || session.name || '');
         setEmail(session.email || '');
         setPhone(session.phone || '');
-        setLocation(session.location || 'Hyderabad');
-        setCategories(session.categories?.join(', ') || 'Venues, Catering');
+        setLocation(session.location || '');
+        setCategories(session.categories?.join(', ') || '');
       }
     })();
   }, []);
@@ -114,7 +114,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Business / Brand Name *</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Royal Palace Events"
+          placeholder="Enter business / brand name"
           placeholderTextColor="#64748b"
           value={businessName}
           onChangeText={setBusinessName}
@@ -124,7 +124,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Owner / Managing Director Name *</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Vikram Reddy"
+          placeholder="Enter owner / manager name"
           placeholderTextColor="#64748b"
           value={ownerName}
           onChangeText={setOwnerName}

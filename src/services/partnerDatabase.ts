@@ -13,6 +13,7 @@ export interface PartnerSession {
   businessName: string;
   categories: string[];
   location: string;
+  mapUrl?: string;
   status: string;
   isVerified: boolean;
   subscriptionStatus?: string;
@@ -53,6 +54,7 @@ export interface PartnerServiceItem {
   documents: string[];
   features: string[];
   location: string;
+  mapUrl?: string;
   city: string;
   availability: string;
   status: string;
@@ -101,6 +103,7 @@ const KEYS = {
   BOOKINGS: '@partner_bookings',
   DASHBOARD: '@partner_dashboard',
   NOTIFICATIONS: '@partner_notifications',
+  DATA_VERSION: '@partner_data_version',
 };
 
 // ==========================================
@@ -198,6 +201,31 @@ class PartnerDatabase {
   async getDashboard(): Promise<any | null> {
     const raw = await AsyncStorage.getItem(KEYS.DASHBOARD);
     return raw ? JSON.parse(raw) : null;
+  }
+
+  // ---- Deep Reset & Cache Migration ----
+  async resetWalletAndBookings(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([KEYS.BOOKINGS, KEYS.DASHBOARD, KEYS.SERVICES, KEYS.NOTIFICATIONS]);
+      const session = await this.getSession();
+      if (session) {
+        session.walletBalance = 0;
+        await this.saveSession(session);
+      }
+    } catch (e) {
+      console.warn('PartnerDatabase.resetWalletAndBookings error:', e);
+    }
+  }
+
+  async migrateOperationalCache(version: string): Promise<void> {
+    try {
+      const installedVersion = await AsyncStorage.getItem(KEYS.DATA_VERSION);
+      if (installedVersion === version) return;
+      await this.resetWalletAndBookings();
+      await AsyncStorage.setItem(KEYS.DATA_VERSION, version);
+    } catch (e) {
+      console.warn('PartnerDatabase.migrateOperationalCache error:', e);
+    }
   }
 
   // ---- Clean Cache ----

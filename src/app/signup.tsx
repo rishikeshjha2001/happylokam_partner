@@ -108,7 +108,7 @@ export default function SignupScreen() {
           {/* Step 1: Personal */}
           {step === 1 && (
             <>
-              <InputField icon={<User size={18} color="#64748b" />} label="Full Name" value={form.name} onChange={(v: string) => update('name', v)} placeholder="Rishi Kumar" />
+              <InputField icon={<User size={18} color="#64748b" />} label="Full Name" value={form.name} onChange={(v: string) => update('name', v)} placeholder="Name" />
               <InputField icon={<Mail size={18} color="#64748b" />} label="Email" value={form.email} onChange={(v: string) => update('email', v)} placeholder="partner@example.com" keyboard="email-address" />
               <InputField icon={<Lock size={18} color="#64748b" />} label="Password" value={form.password} onChange={(v: string) => update('password', v)} placeholder="Min 6 characters" secure />
               <InputField icon={<Phone size={18} color="#64748b" />} label="Phone Number" value={form.phone} onChange={(v: string) => update('phone', v)} placeholder="9876543210" keyboard="phone-pad" maxLen={10} />
@@ -118,7 +118,7 @@ export default function SignupScreen() {
           {/* Step 2: Business */}
           {step === 2 && (
             <>
-              <InputField icon={<Briefcase size={18} color="#64748b" />} label="Business Name" value={form.businessName} onChange={(v: string) => update('businessName', v)} placeholder="Royal Palace Banquet" />
+              <InputField icon={<Briefcase size={18} color="#64748b" />} label="Business Name" value={form.businessName} onChange={(v: string) => update('businessName', v)} placeholder="Enter business name" />
               <Text style={styles.catLabel}>Service Categories</Text>
               <View style={styles.catGrid}>
                 {SERVICE_CATEGORIES.map(cat => (
@@ -141,7 +141,7 @@ export default function SignupScreen() {
               <InputField icon={<MapPin size={18} color="#64748b" />} label="City / Location" value={form.location} onChange={(v: string) => update('location', v)} placeholder="Patna, Bihar" />
               <InputField icon={<Building2 size={18} color="#64748b" />} label="Full Address" value={form.city} onChange={(v: string) => update('city', v)} placeholder="Sector 5, Kankarbagh" />
               <InputField icon={<FileText size={18} color="#64748b" />} label="GST Number (Optional)" value={form.gstNumber} onChange={(v: string) => update('gstNumber', v)} placeholder="22AAAAA0000A1Z5" />
-              <InputField icon={<FileText size={18} color="#64748b" />} label="PAN Number (Optional)" value={form.panNumber} onChange={(v: string) => update('panNumber', v)} placeholder="ABCDE1234F" />
+              <InputField icon={<FileText size={18} color="#64748b" />} label="PAN Number (Optional)" value={form.panNumber} onChange={(v: string) => update('panNumber', v)} placeholder="10-digit PAN (optional)" />
               <InputField icon={<Gift size={18} color="#60a5fa" />} label="Referral Code (Optional)" value={form.referredByCode} onChange={(v: string) => update('referredByCode', v.toUpperCase())} placeholder="e.g. HLP-ROYA-9X2F" />
             </>
           )}

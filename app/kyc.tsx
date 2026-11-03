@@ -28,11 +28,11 @@ import CustomAlert from '../components/CustomAlert';
 import { PARTNER_API } from '../constants/api';
 
 export default function KycScreen() {
-  const [gstNumber, setGstNumber] = useState('36AABCU9603R1ZM');
-  const [panNumber, setPanNumber] = useState('ABCDE1234F');
-  const [bankAccount, setBankAccount] = useState('987654321098');
-  const [bankIfsc, setBankIfsc] = useState('HDFC0001234');
-  const [bankName, setBankName] = useState('HDFC Bank - Jubilee Hills');
+  const [gstNumber, setGstNumber] = useState('');
+  const [panNumber, setPanNumber] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankIfsc, setBankIfsc] = useState('');
+  const [bankName, setBankName] = useState('');
   const [saving, setSaving] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
@@ -58,12 +58,12 @@ export default function KycScreen() {
   }, []);
 
   const handleSaveKyc = async () => {
-    if (!gstNumber.trim() || !panNumber.trim() || !bankAccount.trim() || !bankIfsc.trim()) {
+    if (!bankAccount.trim() || !bankIfsc.trim()) {
       setAlertConfig({
         visible: true,
         type: 'warning',
         title: 'Missing Fields',
-        message: 'Please fill in all KYC, PAN, and Bank details before saving.',
+        message: 'Please provide at least your Bank Account Number and IFSC Code for payouts.',
       });
       return;
     }
@@ -157,7 +157,7 @@ export default function KycScreen() {
           <Text style={styles.label}>GSTIN Number</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. 36AABCU9603R1ZM"
+            placeholder="15-digit GSTIN (optional)"
             placeholderTextColor="#64748b"
             value={gstNumber}
             onChangeText={setGstNumber}
@@ -176,7 +176,7 @@ export default function KycScreen() {
             }
           >
             <Upload size={16} color="#60a5fa" />
-            <Text style={styles.uploadText}>GST_Certificate_2026.pdf (Attached)</Text>
+            <Text style={styles.uploadText}>Attach Business Document / GST (Optional)</Text>
           </TouchableOpacity>
         </View>
 
@@ -194,7 +194,7 @@ export default function KycScreen() {
           <Text style={styles.label}>Company / Proprietor PAN</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. ABCDE1234F"
+            placeholder="10-digit PAN (e.g. Enter 10-character PAN)"
             placeholderTextColor="#64748b"
             value={panNumber}
             onChangeText={setPanNumber}
@@ -216,7 +216,7 @@ export default function KycScreen() {
           <Text style={styles.label}>Bank Name & Branch</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. HDFC Bank - Jubilee Hills"
+            placeholder="e.g. State Bank of India"
             placeholderTextColor="#64748b"
             value={bankName}
             onChangeText={setBankName}
@@ -225,7 +225,7 @@ export default function KycScreen() {
           <Text style={styles.label}>Account Number</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. 50100234567890"
+            placeholder="Enter bank account number"
             placeholderTextColor="#64748b"
             value={bankAccount}
             onChangeText={setBankAccount}
@@ -235,7 +235,7 @@ export default function KycScreen() {
           <Text style={styles.label}>IFSC Code</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. HDFC0001234"
+            placeholder="e.g. SBIN0001234"
             placeholderTextColor="#64748b"
             value={bankIfsc}
             onChangeText={setBankIfsc}

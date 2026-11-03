@@ -75,7 +75,7 @@ export default function SettingsScreen() {
           title: 'App Up to Date 🚀',
           message:
             check.message ||
-            'happylokam Partner App v1.0.12 (OTA build: #20261026) is running the latest production updates.',
+            'happylokam Partner App is running the latest production updates.',
         });
       }
     } catch (e: any) {
@@ -171,15 +171,15 @@ export default function SettingsScreen() {
         </View>
 
         {/* System & OTA Updates */}
-        <Text style={styles.sectionHeader}>System & Live Updates</Text>
+        <Text style={styles.sectionHeader}>System & Preferences</Text>
         <View style={styles.card}>
           <TouchableOpacity style={styles.navRow} onPress={handleOtaCheck}>
             <View style={[styles.iconBox, { backgroundColor: 'rgba(37, 99, 235, 0.12)' }]}>
               <RefreshCw size={18} color="#60a5fa" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>Check for OTA Updates</Text>
-              <Text style={styles.rowSub}>React Native live bundle synchronization</Text>
+              <Text style={styles.rowTitle}>Check for Latest Updates</Text>
+              <Text style={styles.rowSub}>Verify cloud synchronization and cache</Text>
             </View>
             <ChevronRight size={18} color="#64748b" />
           </TouchableOpacity>
