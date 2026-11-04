@@ -13,8 +13,11 @@ export interface PartnerSession {
   businessName: string;
   categories: string[];
   location: string;
+  mapUrl?: string;
   status: string;
   isVerified: boolean;
+  subscriptionStatus?: string;
+  subscriptionEnd?: string;
   ownerName?: string;
   gstNumber?: string;
   panNumber?: string;
@@ -51,6 +54,7 @@ export interface PartnerServiceItem {
   documents: string[];
   features: string[];
   location: string;
+  mapUrl?: string;
   city: string;
   availability: string;
   status: string;
@@ -99,6 +103,7 @@ const KEYS = {
   BOOKINGS: '@partner_bookings',
   DASHBOARD: '@partner_dashboard',
   NOTIFICATIONS: '@partner_notifications',
+  DATA_VERSION: '@partner_data_version',
 };
 
 // ==========================================
@@ -130,7 +135,7 @@ class PartnerDatabase {
     return session?.token || null;
   }
 
-  // ---- Services ----
+  // ---- Services CRUD Helpers ----
   async saveServices(services: PartnerServiceItem[]): Promise<void> {
     await AsyncStorage.setItem(KEYS.SERVICES, JSON.stringify(services));
   }
@@ -141,13 +146,20 @@ class PartnerDatabase {
   }
 
   async updateService(service: PartnerServiceItem): Promise<void> {
-    const current = await this.getServices();
-    await this.saveServices(current.map((item) => item.id === service.id ? service : item));
+    const existing = await this.getServices();
+    const index = existing.findIndex((s) => s.id === service.id);
+    if (index >= 0) {
+      existing[index] = service;
+    } else {
+      existing.unshift(service);
+    }
+    await this.saveServices(existing);
   }
 
   async deleteService(id: string): Promise<void> {
-    const current = await this.getServices();
-    await this.saveServices(current.filter((item) => item.id !== id));
+    const existing = await this.getServices();
+    const filtered = existing.filter((s) => s.id !== id);
+    await this.saveServices(filtered);
   }
 
   // ---- Bookings ----
@@ -161,10 +173,17 @@ class PartnerDatabase {
   }
 
   async updateBooking(booking: PartnerBooking): Promise<void> {
-    const current = await this.getBookings();
-    await this.saveBookings(current.map((item) => item.id === booking.id ? booking : item));
+    const existing = await this.getBookings();
+    const index = existing.findIndex((b) => b.id === booking.id);
+    if (index >= 0) {
+      existing[index] = booking;
+    } else {
+      existing.unshift(booking);
+    }
+    await this.saveBookings(existing);
   }
 
+  // ---- Notifications ----
   async saveNotifications(notifications: any[]): Promise<void> {
     await AsyncStorage.setItem(KEYS.NOTIFICATIONS, JSON.stringify(notifications));
   }
@@ -184,6 +203,31 @@ class PartnerDatabase {
     return raw ? JSON.parse(raw) : null;
   }
 
+  // ---- Deep Reset & Cache Migration ----
+  async resetWalletAndBookings(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([KEYS.BOOKINGS, KEYS.DASHBOARD, KEYS.SERVICES, KEYS.NOTIFICATIONS]);
+      const session = await this.getSession();
+      if (session) {
+        session.walletBalance = 0;
+        await this.saveSession(session);
+      }
+    } catch (e) {
+      console.warn('PartnerDatabase.resetWalletAndBookings error:', e);
+    }
+  }
+
+  async migrateOperationalCache(version: string): Promise<void> {
+    try {
+      const installedVersion = await AsyncStorage.getItem(KEYS.DATA_VERSION);
+      if (installedVersion === version) return;
+      await this.resetWalletAndBookings();
+      await AsyncStorage.setItem(KEYS.DATA_VERSION, version);
+    } catch (e) {
+      console.warn('PartnerDatabase.migrateOperationalCache error:', e);
+    }
+  }
+
   // ---- Clean Cache ----
   async cleanCache(): Promise<void> {
     try {
@@ -191,6 +235,7 @@ class PartnerDatabase {
         KEYS.SERVICES,
         KEYS.BOOKINGS,
         KEYS.DASHBOARD,
+        KEYS.NOTIFICATIONS,
       ]);
     } catch (e) {
       console.warn('PartnerDatabase.cleanCache error:', e);

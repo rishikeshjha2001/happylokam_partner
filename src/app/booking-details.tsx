@@ -58,8 +58,24 @@ export default function BookingDetailsScreen() {
   useEffect(() => {
     (async () => {
       const bookings = await PartnerDatabase.getBookings();
-      const target = bookings.find((b) => b.id === params.id) || bookings[0] || null;
-      setBooking(target);
+      const target = bookings.find((b) => b.id === params.id) || null;
+      if (target) {
+        setBooking(target);
+      }
+      // Also fetch fresh from API
+      try {
+        const session = await PartnerDatabase.getSession();
+        if (session?.token && params.id) {
+          const res = await fetch(`${PARTNER_API}/bookings/${params.id}`, {
+            headers: { Authorization: `Bearer ${session.token}` }
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            setBooking(json.data);
+            await PartnerDatabase.updateBooking(json.data);
+          }
+        }
+      } catch (e) {}
     })();
   }, [params.id]);
 
@@ -237,7 +253,7 @@ export default function BookingDetailsScreen() {
               visible: true,
               type: 'success',
               title: 'Service Completed! 🌟',
-              message: `Booking #${booking.ticketId || booking.id} marked as completed. Funds of ₹${booking.totalAmount.toLocaleString('en-IN')} have been released to your wallet.`,
+              message: `Booking #${booking.ticketId || booking.id} marked as completed. The booking has been successfully finalized.`,
             });
             return;
           }
@@ -254,7 +270,7 @@ export default function BookingDetailsScreen() {
         visible: true,
         type: 'success',
         title: 'Service Completed! 🌟',
-        message: `Booking #${booking.ticketId || booking.id} marked as completed. Funds of ₹${booking.totalAmount.toLocaleString('en-IN')} have been released to your wallet.`,
+        message: `Booking #${booking.ticketId || booking.id} marked as completed. The booking has been successfully finalized.`,
       });
     } catch (e: any) {
       setProcessing(false);
@@ -289,7 +305,7 @@ export default function BookingDetailsScreen() {
         <View style={styles.statusCard}>
           <View style={{ flex: 1 }}>
             <Text style={styles.ticketId}>TICKET #{booking.ticketId || 'HLP-BKG-8891'}</Text>
-            <Text style={styles.serviceTitle}>{booking.venue?.name || 'Grand Ballroom Venue'}</Text>
+            <Text style={styles.serviceTitle}>{booking.venue?.name || 'Booked Service'}</Text>
             <Text style={styles.eventDate}>📅 Event Date: {booking.date}</Text>
           </View>
           <View

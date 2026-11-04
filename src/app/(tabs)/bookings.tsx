@@ -80,7 +80,7 @@ export default function BookingsScreen() {
         });
         clearTimeout(timer);
         const json = await res.json();
-        if (json.success && json.data && json.data.length > 0) {
+        if (json.success && Array.isArray(json.data)) {
           setBookings(json.data);
           await PartnerDatabase.saveBookings(json.data);
         }
@@ -227,14 +227,7 @@ export default function BookingsScreen() {
           <Text style={styles.headerTitle}>Customer Bookings</Text>
           <Text style={styles.headerSub}>Manage your event reservations & clients</Text>
         </View>
-        <TouchableOpacity
-          style={styles.headerWalletBtn}
-          onPress={() => router.push('/wallet')}
-          activeOpacity={0.8}
-        >
-          <DollarSign size={14} color="#60a5fa" />
-          <Text style={styles.headerWalletText}>Payouts</Text>
-        </TouchableOpacity>
+        
       </View>
 
       {/* Filter Tabs */}

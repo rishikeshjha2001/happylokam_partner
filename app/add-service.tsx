@@ -64,20 +64,17 @@ export default function AddServiceScreen() {
   const [pricingUnit, setPricingUnit] = useState('PER_EVENT');
   const [pricingModel, setPricingModel] = useState<'PER_PERSON' | 'FIXED_PACKAGE' | 'MANUAL_CUSTOM'>('PER_PERSON');
   const [pricePerPerson, setPricePerPerson] = useState('');
-  const [minGuests, setMinGuests] = useState('50');
-  const [maxGuests, setMaxGuests] = useState('500');
-  const [capacity, setCapacity] = useState('500');
-  const [city, setCity] = useState('Hyderabad');
-  const [availableCities, setAvailableCities] = useState('Hyderabad, Secunderabad, Gachibowli, Jubilee Hills');
+  const [minGuests, setMinGuests] = useState('');
+  const [maxGuests, setMaxGuests] = useState('');
+  const [capacity, setCapacity] = useState('');
+  const [city, setCity] = useState('');
+  const [availableCities, setAvailableCities] = useState('');
   const [location, setLocation] = useState('');
   const [features, setFeatures] = useState('');
   const [mapUrl, setMapUrl] = useState('');
 
   // Customizable Tier Packages
-  const [packages, setPackages] = useState<PartnerServicePackage[]>([
-    { name: 'Silver Celebration Package', guests: 100, price: 45000, description: 'Standard setup, 3-course buffet, ambient audio' },
-    { name: 'Gold Royal Package', guests: 250, price: 95000, description: 'Premium decor, grand buffet, concert lighting & stage' },
-  ]);
+  const [packages, setPackages] = useState<PartnerServicePackage[]>([]);
   const [pkgName, setPkgName] = useState('');
   const [pkgGuests, setPkgGuests] = useState('');
   const [pkgPrice, setPkgPrice] = useState('');
@@ -471,7 +468,7 @@ export default function AddServiceScreen() {
         <Text style={styles.label}>Coverage & Available Cities (Where you can serve)</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Hyderabad, Secunderabad, Gachibowli, Jubilee Hills, Bengaluru"
+          placeholder="e.g. Patna, Danapur, Hajipur"
           placeholderTextColor="#64748b"
           value={availableCities}
           onChangeText={setAvailableCities}
@@ -482,7 +479,7 @@ export default function AddServiceScreen() {
         <Text style={styles.label}>Main Studio / Venue Address & Landmark</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Road No 36, Jubilee Hills, Near Metro Station"
+          placeholder="e.g. Boring Road, Near City Center"
           placeholderTextColor="#64748b"
           value={location}
           onChangeText={setLocation}

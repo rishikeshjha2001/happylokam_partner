@@ -49,29 +49,23 @@ export default function ServiceDetailsScreen() {
 
   const loadService = useCallback(async () => {
     const services = await PartnerDatabase.getServices();
-    const item = services.find((s) => s.id === params.id) || services[0] || {
-      id: 'srv-1',
-      name: 'Grand Royal Ballroom',
-      description: 'Central AC banquet hall with 800+ seating capacity, crystal chandeliers, stage setup and green rooms.',
-      category: 'Venue',
-      subCategory: 'AC Banquet Hall',
-      pricing: 75000,
-      pricingUnit: 'PER_EVENT',
-      capacity: 850,
-      images: [],
-      documents: [],
-      features: ['AC Hall', 'Stage Lighting', 'Valet Parking', 'Power Backup'],
-      location: 'Road No 36, Jubilee Hills',
-      city: 'Hyderabad',
-      availability: 'AVAILABLE',
-      status: 'APPROVED',
-      rating: 4.9,
-      totalBookings: 12,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
+    let item = services.find((s) => s.id === params.id) || null;
+    if (!item && params.id) {
+      try {
+        const session = await PartnerDatabase.getSession();
+        if (session?.token) {
+          const res = await fetch(`${PARTNER_API}/services/${params.id}`, {
+            headers: { Authorization: `Bearer ${session.token}` }
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            item = json.data;
+          }
+        }
+      } catch (e) {}
+    }
     setService(item);
-    setIsActive(item.isActive !== false);
+    setIsActive(item ? item.isActive !== false : false);
   }, [params.id]);
 
   useFocusEffect(
@@ -80,7 +74,25 @@ export default function ServiceDetailsScreen() {
     }, [loadService])
   );
 
-  if (!service) return null;
+  if (!service) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor="#070a12" />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <ArrowLeft size={20} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Service Details</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Tag size={40} color="#64748b" />
+          <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700', marginTop: 12 }}>Service Not Found</Text>
+          <Text style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', marginTop: 6 }}>This service listing is no longer available or was removed.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleToggleAvailability = async (val: boolean) => {
     setIsActive(val);
@@ -252,7 +264,7 @@ export default function ServiceDetailsScreen() {
         {/* Address */}
         <View style={styles.card}>
           <Text style={styles.cardSectionTitle}>Venue / Business Address</Text>
-          <Text style={styles.addressText}>{service.location || 'Road No 36, Jubilee Hills, Hyderabad'}</Text>
+          <Text style={styles.addressText}>{service.location || 'Location not specified'}</Text>
         </View>
 
         {/* Edit Button CTA */}

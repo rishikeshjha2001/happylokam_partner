@@ -25,7 +25,6 @@ import {
   Briefcase,
   Star,
   Gift,
-  Wallet,
   ChevronRight,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -300,12 +299,12 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={styles.actionCard}
             activeOpacity={0.85}
-            onPress={() => router.push('/kyc')}
+            onPress={() => router.push('/referrals')}
           >
-            <View style={[styles.actionIcon, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
-              <ShieldCheck size={20} color="#38bdf8" />
+            <View style={[styles.actionIcon, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
+              <Gift size={20} color="#fbbf24" />
             </View>
-            <Text style={styles.actionText}>KYC & Bank</Text>
+            <Text style={styles.actionText}>Refer & Earn</Text>
           </TouchableOpacity>
         </View>
 
@@ -318,52 +317,50 @@ export default function DashboardScreen() {
         </View>
 
         {recentBookings.length === 0 ? (
-          <View style={[styles.bookingCard, { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 }]}>
-            <Text style={{ color: '#94a3b8', fontSize: 13, fontWeight: '500', textAlign: 'center' }}>
-              No bookings yet. Customer orders for your venues & services will appear here in real time.
-            </Text>
+          <View style={{ backgroundColor: '#0f172a', borderRadius: 16, padding: 24, alignItems: 'center', marginVertical: 8, borderWidth: 1, borderColor: '#1e293b' }}>
+            <CalendarCheck size={28} color="#64748b" />
+            <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 10 }}>No Recent Bookings</Text>
+            <Text style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', marginTop: 4 }}>New customer reservations and bookings will appear here in real-time.</Text>
           </View>
-        ) : (
-          recentBookings.map((b: any) => (
-            <TouchableOpacity
-              key={b.id}
-              style={styles.bookingCard}
-              activeOpacity={0.85}
-              onPress={() => router.push({ pathname: '/booking-details', params: { id: b.id } })}
-            >
-              <View style={styles.bookingLeft}>
-                <Text style={styles.bookingCustomer}>{b.user?.name || 'Customer'}</Text>
-                <Text style={styles.bookingVenue}>{b.venue?.name || b.service?.title || 'Direct Booking'}</Text>
-                <Text style={styles.bookingDate}>
-                  {b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-IN') : 'Recent'}
-                </Text>
-              </View>
-              <View style={styles.bookingRight}>
-                <Text style={styles.bookingAmount}>₹{(b.totalAmount || 0).toLocaleString('en-IN')}</Text>
-                <View
+        ) : recentBookings.map((b: any) => (
+          <TouchableOpacity
+            key={b.id}
+            style={styles.bookingCard}
+            activeOpacity={0.85}
+            onPress={() => router.push({ pathname: '/booking-details', params: { id: b.id } })}
+          >
+            <View style={styles.bookingLeft}>
+              <Text style={styles.bookingCustomer}>{b.user?.name || 'Customer'}</Text>
+              <Text style={styles.bookingVenue}>{b.venue?.name || b.service?.name || 'Booked Service'}</Text>
+              <Text style={styles.bookingDate}>
+                {new Date(b.createdAt).toLocaleDateString('en-IN')}
+              </Text>
+            </View>
+            <View style={styles.bookingRight}>
+              <Text style={styles.bookingAmount}>₹{(b.totalAmount || 0).toLocaleString('en-IN')}</Text>
+              <View
+                style={[
+                  styles.bookingStatusPill,
+                  {
+                    backgroundColor:
+                      b.status === 'CONFIRMED'
+                        ? 'rgba(52,211,153,0.15)'
+                        : 'rgba(251,191,36,0.15)',
+                  },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.bookingStatusPill,
-                    {
-                      backgroundColor:
-                        b.status === 'CONFIRMED'
-                          ? 'rgba(52,211,153,0.15)'
-                          : 'rgba(251,191,36,0.15)',
-                    },
+                    styles.bookingStatusText,
+                    { color: b.status === 'CONFIRMED' ? '#34d399' : '#fbbf24' },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.bookingStatusText,
-                      { color: b.status === 'CONFIRMED' ? '#34d399' : '#fbbf24' },
-                    ]}
-                  >
-                    {b.status || 'PENDING'}
-                  </Text>
-                </View>
+                  {b.status}
+                </Text>
               </View>
-            </TouchableOpacity>
-          ))
-        )}
+            </View>
+          </TouchableOpacity>
+        ))}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -557,26 +554,4 @@ const styles = StyleSheet.create({
   bookingAmount: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
   bookingStatusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
   bookingStatusText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
-  emptyBookingsCard: {
-    backgroundColor: '#0d1117',
-    borderRadius: 14,
-    padding: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#1c2333',
-    marginBottom: 10,
-    gap: 8,
-  },
-  emptyBookingsTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#e2e8f0',
-  },
-  emptyBookingsSubtitle: {
-    fontSize: 12,
-    color: '#64748b',
-    textAlign: 'center',
-    maxWidth: 260,
-  },
 });

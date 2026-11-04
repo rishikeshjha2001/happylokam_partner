@@ -57,7 +57,7 @@ export default function ReferralsScreen() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [referrals, setReferrals] = useState<ReferredPartner[]>([]);
   const [bookings, setBookings] = useState<ReferralBooking[]>([]);
-  const [walletBalance, setWalletBalance] = useState(0);
+  
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [bookingRevenue, setBookingRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,7 @@ export default function ReferralsScreen() {
           if (d.qrCodeUrl) setQrCodeUrl(d.qrCodeUrl);
           setReferrals(d.referredPartners || []);
           setBookings(d.referralBookings || []);
-          setWalletBalance(d.walletBalance || 0);
+          
           setTotalEarnings(d.referralBonusEarned || 0);
           setBookingRevenue(d.bookingRevenueGenerated || 0);
         }
@@ -226,7 +226,7 @@ export default function ReferralsScreen() {
           <View style={styles.codeContainer}>
             <View>
               <Text style={styles.codeLabel}>YOUR INVITE CODE</Text>
-              <Text style={styles.codeText}>{code || 'HLP-PRO-8923'}</Text>
+              <Text style={styles.codeText}>{code || 'HLP-PARTNER'}</Text>
             </View>
             <View style={styles.codeActionRow}>
               <TouchableOpacity style={styles.copyBtn} activeOpacity={0.8} onPress={handleCopyCode}>
@@ -300,7 +300,7 @@ export default function ReferralsScreen() {
             <View style={styles.stepNum}><Text style={styles.stepNumText}>3</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.stepTitle}>Earn ₹500 Bonus</Text>
-              <Text style={styles.stepDesc}>₹500 is directly credited to your happylokam Wallet on verification.</Text>
+              <Text style={styles.stepDesc}>Referral bonuses are directly credited to your account upon verification.</Text>
             </View>
           </View>
         </View>

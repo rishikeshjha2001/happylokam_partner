@@ -7,7 +7,7 @@ import PartnerDatabase from '../services/partnerDatabase';
 
 export default function RootLayout() {
   useEffect(() => {
-    void PartnerDatabase.migrateOperationalCache('2026-11-02-fresh-start-reset');
+    void PartnerDatabase.migrateOperationalCache('2026-11-04-clean-release-v29');
     void checkAndApplyOTAUpdates();
   }, []);
 
@@ -26,7 +26,6 @@ export default function RootLayout() {
         <Stack.Screen name="signup" />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="notifications" />
-        <Stack.Screen name="wallet" />
         <Stack.Screen name="kyc" />
         <Stack.Screen name="referrals" />
         <Stack.Screen name="add-service" />

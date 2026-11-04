@@ -25,7 +25,6 @@ import {
   Briefcase,
   Star,
   Gift,
-  Wallet,
   ChevronRight,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -289,7 +288,7 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={styles.actionCard}
             activeOpacity={0.85}
-            onPress={() => router.push('/(tabs)/bookings')}
+            onPress={() => router.push('/(tabs)/services')}
           >
             <View style={[styles.actionIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
               <Briefcase size={20} color="#c084fc" />
@@ -305,7 +304,7 @@ export default function DashboardScreen() {
             <View style={[styles.actionIcon, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
               <Gift size={20} color="#fbbf24" />
             </View>
-            <Text style={styles.actionText}>Refer ₹500</Text>
+            <Text style={styles.actionText}>Refer & Earn</Text>
           </TouchableOpacity>
         </View>
 
@@ -317,7 +316,13 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {recentBookings.map((b: any) => (
+        {recentBookings.length === 0 ? (
+          <View style={{ backgroundColor: '#0f172a', borderRadius: 16, padding: 24, alignItems: 'center', marginVertical: 8, borderWidth: 1, borderColor: '#1e293b' }}>
+            <CalendarCheck size={28} color="#64748b" />
+            <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 10 }}>No Recent Bookings</Text>
+            <Text style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', marginTop: 4 }}>New customer reservations and bookings will appear here in real-time.</Text>
+          </View>
+        ) : recentBookings.map((b: any) => (
           <TouchableOpacity
             key={b.id}
             style={styles.bookingCard}
@@ -326,7 +331,7 @@ export default function DashboardScreen() {
           >
             <View style={styles.bookingLeft}>
               <Text style={styles.bookingCustomer}>{b.user?.name || 'Customer'}</Text>
-              <Text style={styles.bookingVenue}>{b.venue?.name || 'Grand Ballroom'}</Text>
+              <Text style={styles.bookingVenue}>{b.venue?.name || b.service?.name || 'Booked Service'}</Text>
               <Text style={styles.bookingDate}>
                 {new Date(b.createdAt).toLocaleDateString('en-IN')}
               </Text>

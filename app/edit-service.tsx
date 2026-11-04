@@ -76,9 +76,9 @@ export default function EditServiceScreen() {
   // Pricing Model, Guests & Packages
   const [pricingModel, setPricingModel] = useState<'PER_PERSON' | 'FIXED_PACKAGE' | 'MANUAL_CUSTOM'>('PER_PERSON');
   const [pricePerPerson, setPricePerPerson] = useState('');
-  const [minGuests, setMinGuests] = useState('50');
-  const [maxGuests, setMaxGuests] = useState('500');
-  const [availableCities, setAvailableCities] = useState('Hyderabad, Secunderabad, Gachibowli');
+  const [minGuests, setMinGuests] = useState('');
+  const [maxGuests, setMaxGuests] = useState('');
+  const [availableCities, setAvailableCities] = useState('');
   const [packages, setPackages] = useState<any[]>([]);
   const [pkgName, setPkgName] = useState('');
   const [pkgGuests, setPkgGuests] = useState('');
@@ -501,7 +501,7 @@ export default function EditServiceScreen() {
                 style={[styles.textInput, { paddingLeft: 40, flex: 1 }]}
                 value={location}
                 onChangeText={setLocation}
-                placeholder="Road No 36, Jubilee Hills"
+                placeholder="Boring Road, Patna"
                 placeholderTextColor="#64748b"
               />
             </View>

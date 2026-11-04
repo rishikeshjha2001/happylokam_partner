@@ -110,7 +110,7 @@ export default function ProfileScreen() {
         setAlertConfig({
           type: 'success',
           title: 'Latest Version Installed',
-          message: 'happylokam Partner App is synchronized with the latest cloud release (v1.0.25).',
+          message: 'happylokam Partner App is synchronized with the latest official cloud release.',
         });
       }, 700);
     } catch (e: any) {
