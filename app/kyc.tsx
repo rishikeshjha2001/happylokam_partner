@@ -21,7 +21,6 @@ import {
   Clock,
   AlertCircle,
   Upload,
-  Sparkles,
 } from 'lucide-react-native';
 import PartnerDatabase from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
@@ -33,6 +32,7 @@ export default function KycScreen() {
   const [bankAccount, setBankAccount] = useState('');
   const [bankIfsc, setBankIfsc] = useState('');
   const [bankName, setBankName] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
   const [saving, setSaving] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
@@ -53,6 +53,7 @@ export default function KycScreen() {
         if (session.panNumber) setPanNumber(session.panNumber);
         if (session.bankAccount) setBankAccount(session.bankAccount);
         if (session.bankIfsc) setBankIfsc(session.bankIfsc);
+        setIsVerified(!!session.isVerified);
       }
     })();
   }, []);
@@ -101,7 +102,7 @@ export default function KycScreen() {
         visible: true,
         type: 'success',
         title: 'KYC Details Updated! 🛡️',
-        message: 'Your Business & Bank verification details have been securely saved and accepted by happylokam Support.',
+        message: 'Your Business & Bank verification details have been securely saved and submitted to happylokam Support.',
       });
     } catch (e) {
       console.warn('KYC update error:', e);
@@ -115,6 +116,10 @@ export default function KycScreen() {
       setSaving(false);
     }
   };
+
+  const hasBankConfigured = Boolean(bankAccount.trim() && bankIfsc.trim());
+  const hasGst = Boolean(gstNumber.trim());
+  const hasPan = Boolean(panNumber.trim());
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -131,75 +136,34 @@ export default function KycScreen() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Status Card */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusIconBox}>
-            <ShieldCheck size={28} color="#34d399" />
+        <View
+          style={[
+            styles.statusCard,
+            isVerified ? styles.statusCardVerified : styles.statusCardPending,
+          ]}
+        >
+          <View
+            style={[
+              styles.statusIconBox,
+              isVerified ? styles.statusIconBoxVerified : styles.statusIconBoxPending,
+            ]}
+          >
+            {isVerified ? (
+              <ShieldCheck size={28} color="#34d399" />
+            ) : (
+              <AlertCircle size={28} color="#fbbf24" />
+            )}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.statusTitle}>Verification in Good Standing</Text>
+            <Text style={styles.statusTitle}>
+              {isVerified ? 'Partner KYC Verified' : 'KYC & Bank Setup'}
+            </Text>
             <Text style={styles.statusSubtitle}>
-              Government IDs and tax details allow automatic bank payouts and verified badge.
+              {isVerified
+                ? 'Your partner account is verified. Automatic bank payouts are enabled for your completed bookings.'
+                : 'Configure your payout bank account below to receive customer earnings directly to your bank.'}
             </Text>
           </View>
-        </View>
-
-        {/* GST Section */}
-        <View style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <FileText size={20} color="#60a5fa" />
-            <Text style={styles.cardTitle}>GST Registration</Text>
-            <View style={styles.verifiedBadge}>
-              <CheckCircle2 size={12} color="#34d399" />
-              <Text style={styles.verifiedBadgeText}>Verified</Text>
-            </View>
-          </View>
-
-          <Text style={styles.label}>GSTIN Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="15-digit GSTIN (optional)"
-            placeholderTextColor="#64748b"
-            value={gstNumber}
-            onChangeText={setGstNumber}
-            autoCapitalize="characters"
-          />
-
-          <TouchableOpacity
-            style={styles.uploadRow}
-            onPress={() =>
-              setAlertConfig({
-                visible: true,
-                type: 'info',
-                title: 'Document Upload',
-                message: 'GST Certificate is attached and verified on file.',
-              })
-            }
-          >
-            <Upload size={16} color="#60a5fa" />
-            <Text style={styles.uploadText}>Attach Business Document / GST (Optional)</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* PAN Card Section */}
-        <View style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <CreditCard size={20} color="#fbbf24" />
-            <Text style={styles.cardTitle}>Business PAN</Text>
-            <View style={styles.verifiedBadge}>
-              <CheckCircle2 size={12} color="#34d399" />
-              <Text style={styles.verifiedBadgeText}>Verified</Text>
-            </View>
-          </View>
-
-          <Text style={styles.label}>Company / Proprietor PAN</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="10-digit PAN (e.g. Enter 10-character PAN)"
-            placeholderTextColor="#64748b"
-            value={panNumber}
-            onChangeText={setPanNumber}
-            autoCapitalize="characters"
-          />
         </View>
 
         {/* Bank Account Section */}
@@ -207,16 +171,23 @@ export default function KycScreen() {
           <View style={styles.cardHeader}>
             <Building2 size={20} color="#a78bfa" />
             <Text style={styles.cardTitle}>Payout Bank Account</Text>
-            <View style={styles.verifiedBadge}>
-              <CheckCircle2 size={12} color="#34d399" />
-              <Text style={styles.verifiedBadgeText}>Active</Text>
-            </View>
+            {hasBankConfigured ? (
+              <View style={styles.verifiedBadge}>
+                <CheckCircle2 size={12} color="#34d399" />
+                <Text style={styles.verifiedBadgeText}>Configured</Text>
+              </View>
+            ) : (
+              <View style={styles.pendingBadge}>
+                <Clock size={12} color="#fbbf24" />
+                <Text style={styles.pendingBadgeText}>Not Added</Text>
+              </View>
+            )}
           </View>
 
           <Text style={styles.label}>Bank Name & Branch</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. State Bank of India"
+            placeholder="Bank Name & Branch"
             placeholderTextColor="#64748b"
             value={bankName}
             onChangeText={setBankName}
@@ -235,10 +206,82 @@ export default function KycScreen() {
           <Text style={styles.label}>IFSC Code</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. SBIN0001234"
+            placeholder="Enter 11-digit IFSC code"
             placeholderTextColor="#64748b"
             value={bankIfsc}
             onChangeText={setBankIfsc}
+            autoCapitalize="characters"
+          />
+        </View>
+
+        {/* GST Section */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeader}>
+            <FileText size={20} color="#60a5fa" />
+            <Text style={styles.cardTitle}>GST Registration</Text>
+            {hasGst ? (
+              <View style={styles.verifiedBadge}>
+                <CheckCircle2 size={12} color="#34d399" />
+                <Text style={styles.verifiedBadgeText}>Provided</Text>
+              </View>
+            ) : (
+              <View style={styles.optionalBadge}>
+                <Text style={styles.optionalBadgeText}>Optional</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.label}>GSTIN Number</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="15-digit GSTIN (optional)"
+            placeholderTextColor="#64748b"
+            value={gstNumber}
+            onChangeText={setGstNumber}
+            autoCapitalize="characters"
+          />
+
+          <TouchableOpacity
+            style={styles.uploadRow}
+            onPress={() =>
+              setAlertConfig({
+                visible: true,
+                type: 'info',
+                title: 'Document Verification',
+                message:
+                  'Document verification is handled via happylokam Partner Support. Enter your GSTIN and bank details above to configure payouts.',
+              })
+            }
+          >
+            <Upload size={16} color="#60a5fa" />
+            <Text style={styles.uploadText}>Attach Business Document / GST (Optional)</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* PAN Card Section */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeader}>
+            <CreditCard size={20} color="#fbbf24" />
+            <Text style={styles.cardTitle}>Business PAN</Text>
+            {hasPan ? (
+              <View style={styles.verifiedBadge}>
+                <CheckCircle2 size={12} color="#34d399" />
+                <Text style={styles.verifiedBadgeText}>Provided</Text>
+              </View>
+            ) : (
+              <View style={styles.optionalBadge}>
+                <Text style={styles.optionalBadgeText}>Optional</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.label}>Company / Proprietor PAN</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="10-digit PAN (optional)"
+            placeholderTextColor="#64748b"
+            value={panNumber}
+            onChangeText={setPanNumber}
             autoCapitalize="characters"
           />
         </View>
@@ -300,17 +343,27 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
     marginBottom: 20,
     alignItems: 'center',
+  },
+  statusCardVerified: {
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  statusCardPending: {
+    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   statusIconBox: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: 'rgba(52, 211, 153, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  statusIconBoxVerified: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+  },
+  statusIconBoxPending: {
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
   },
   statusTitle: { fontSize: 14, fontWeight: '800', color: '#ffffff' },
   statusSubtitle: { fontSize: 12, color: '#94a3b8', marginTop: 3, lineHeight: 16 },
@@ -336,6 +389,27 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   verifiedBadgeText: { fontSize: 10, fontWeight: '800', color: '#34d399' },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  pendingBadgeText: { fontSize: 10, fontWeight: '800', color: '#fbbf24' },
+  optionalBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: 'rgba(148, 163, 184, 0.1)',
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  optionalBadgeText: { fontSize: 10, fontWeight: '700', color: '#94a3b8' },
   label: { fontSize: 12, fontWeight: '700', color: '#94a3b8', marginBottom: 6, marginTop: 8 },
   input: {
     backgroundColor: '#121622',
