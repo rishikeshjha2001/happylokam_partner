@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Image,
   Dimensions,
   StatusBar,
 } from 'react-native';
@@ -54,7 +53,7 @@ export default function SplashScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0052FF" />
 
-      {/* Centered Official happylokam Brand Asset */}
+      {/* Blue Background with Pure White happylokam Text */}
       <Animated.View
         style={[
           styles.contentWrapper,
@@ -64,12 +63,11 @@ export default function SplashScreen() {
           },
         ]}
       >
-        <Image
-          source={require('../../assets/icon.png')}
-          style={styles.logoImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.tagline}>Partner Network</Text>
+        <Text style={styles.brandTitle}>happylokam</Text>
+
+        <View style={styles.partnerBadge}>
+          <Text style={styles.tagline}>Partner Network</Text>
+        </View>
       </Animated.View>
     </View>
   );
@@ -78,7 +76,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0052FF',
+    backgroundColor: '#0052FF', // Official Partner Blue
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -86,15 +84,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoImage: {
-    width: Math.min(width * 0.65, 260),
-    height: Math.min(width * 0.65, 260),
+  brandTitle: {
+    fontSize: 52,
+    fontWeight: '900',
+    color: '#ffffff', // Pure White text happylokam
+    letterSpacing: -1.5,
+  },
+  partnerBadge: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   tagline: {
-    marginTop: 8,
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#ffffff',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
   },

@@ -15,6 +15,7 @@
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F4F933AA5DAC4E18BFDA9045 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0217DA48744D4B49ACB60DDF /* noop-file.swift */; };
+		77AABB112233445566778899 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 88AABB112233445566778899 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-happylokampartner/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		0217DA48744D4B49ACB60DDF /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "happylokampartner/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
 		2B0D09E8BD80498484883B10 /* happylokampartner-Bridging-Header.h */ = {isa = PBXFileReference; name = "happylokampartner-Bridging-Header.h"; path = "happylokampartner/happylokampartner-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
+		88AABB112233445566778899 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = happylokampartner/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +59,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
+				88AABB112233445566778899 /* PrivacyInfo.xcprivacy */,
 				0217DA48744D4B49ACB60DDF /* noop-file.swift */,
 				2B0D09E8BD80498484883B10 /* happylokampartner-Bridging-Header.h */,
 			);
@@ -198,6 +201,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
+				77AABB112233445566778899 /* PrivacyInfo.xcprivacy in Resources */,
 				81DB59DB08B74DD0B250B90E /* happylokampartner-Bridging-Header.h in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
