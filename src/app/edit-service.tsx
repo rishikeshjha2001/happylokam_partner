@@ -85,6 +85,10 @@ export default function EditServiceScreen() {
   const [pkgPrice, setPkgPrice] = useState('');
   const [pkgDesc, setPkgDesc] = useState('');
   const [showAddPackage, setShowAddPackage] = useState(false);
+  const [baseHallPrice, setBaseHallPrice] = useState('');
+  const [pricePerPlate, setPricePerPlate] = useState('');
+  const [blackoutDatesInput, setBlackoutDatesInput] = useState('');
+  const [autoAccept, setAutoAccept] = useState(true);
 
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
@@ -178,6 +182,10 @@ export default function EditServiceScreen() {
     if (item.maxGuests) setMaxGuests(String(item.maxGuests));
     if (item.availableCities) setAvailableCities(item.availableCities.join(', '));
     if (item.packages) setPackages(item.packages);
+    if (item.baseHallPrice) setBaseHallPrice(String(item.baseHallPrice));
+    if (item.pricePerPlate) setPricePerPlate(String(item.pricePerPlate));
+    if (item.blackoutDates) setBlackoutDatesInput(item.blackoutDates.join(', '));
+    if (item.autoAccept !== undefined) setAutoAccept(Boolean(item.autoAccept));
   };
 
   const handleAddFeature = () => {
@@ -224,6 +232,10 @@ export default function EditServiceScreen() {
         pricingUnit,
         pricingModel,
         pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
+        pricePerPlate: pricePerPlate ? parseFloat(pricePerPlate) : undefined,
+        baseHallPrice: baseHallPrice ? parseFloat(baseHallPrice) : undefined,
+        autoAccept,
+        blackoutDates: blackoutDatesInput.split(',').map((d) => d.trim()).filter(Boolean),
         minGuests: parseInt(minGuests) || 50,
         maxGuests: parseInt(maxGuests) || 500,
         availableCities: citiesList.length > 0 ? citiesList : [city.trim() || 'Hyderabad'],
@@ -550,6 +562,87 @@ export default function EditServiceScreen() {
                 </View>
               ))}
             </View>
+          </View>
+
+          {/* Booking Rules & Availability Engine */}
+          <View style={styles.card}>
+            <Text style={styles.inputLabel}>Booking Rules & Availability Engine</Text>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Hall Base Rate (₹)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={baseHallPrice}
+                  onChangeText={setBaseHallPrice}
+                  placeholder="e.g. 25000"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Catering / Plate (₹)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={pricePerPlate}
+                  onChangeText={setPricePerPlate}
+                  placeholder="e.g. 550"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Blackout / Blocked Dates</Text>
+            <TextInput
+              style={styles.textInput}
+              value={blackoutDatesInput}
+              onChangeText={setBlackoutDatesInput}
+              placeholder="e.g. 2026-11-25, 2026-12-05, 2026-12-31"
+              placeholderTextColor="#64748b"
+            />
+            <Text style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+              Comma-separated dates (YYYY-MM-DD) that customers cannot book
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: autoAccept ? '#064e3b' : '#1e293b',
+                borderWidth: 1.5,
+                borderColor: autoAccept ? '#10b981' : '#334155',
+                padding: 14,
+                borderRadius: 14,
+                marginTop: 14,
+              }}
+              onPress={() => setAutoAccept(!autoAccept)}
+              activeOpacity={0.8}
+            >
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+                  {autoAccept ? '⚡ Instant Auto-Accept Enabled' : '⏳ Manual Review Mode'}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                  {autoAccept
+                    ? 'Paid bookings confirm instantly with live notification.'
+                    : 'Customer payment is held for 24h partner approval.'}
+                </Text>
+              </View>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 8,
+                  backgroundColor: autoAccept ? '#10b981' : '#64748b',
+                }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#ffffff' }}>
+                  {autoAccept ? 'INSTANT' : 'MANUAL'}
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Submit Button */}

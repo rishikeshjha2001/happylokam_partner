@@ -45,9 +45,16 @@ export interface PartnerServiceItem {
   pricingUnit: string;
   pricingModel?: 'PER_PERSON' | 'FIXED_PACKAGE' | 'MANUAL_CUSTOM';
   pricePerPerson?: number;
+  pricePerPlate?: number;
+  baseHallPrice?: number;
+  pricePerGuest?: number;
   availableCities?: string[];
   minGuests?: number;
   maxGuests?: number;
+  blackoutDates?: string[];
+  slotTimes?: string[];
+  advanceNoticeHours?: number;
+  autoAccept?: boolean;
   packages?: PartnerServicePackage[];
   capacity?: number;
   images: string[];
@@ -69,9 +76,21 @@ export interface PartnerBooking {
   id: string;
   userId: string;
   user?: { name: string; email: string; phone?: string };
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   venueId?: string;
   venue?: { name: string };
+  serviceName?: string;
   date: string;
+  bookingDate?: string;
+  bookingTime?: string;
+  bookingDays?: number;
+  guestCount?: number;
+  platesCount?: number;
+  checkInOtp?: string;
+  checkInStatus?: string;
+  checkedInAt?: string;
   status: string;
   baseAmount: number;
   platformFee: number;
@@ -79,6 +98,7 @@ export interface PartnerBooking {
   totalAmount: number;
   paymentStatus?: string;
   ticketId?: string;
+  ticketCode?: string;
   createdAt: string;
 }
 

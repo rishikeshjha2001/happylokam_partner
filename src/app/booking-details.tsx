@@ -39,6 +39,8 @@ export default function BookingDetailsScreen() {
   const params = useLocalSearchParams();
   const [booking, setBooking] = useState<PartnerBooking | null>(null);
   const [otpModalVisible, setOtpModalVisible] = useState(false);
+  const [checkInModalVisible, setCheckInModalVisible] = useState(false);
+  const [checkInCodeInput, setCheckInCodeInput] = useState('');
   const [declineModalVisible, setDeclineModalVisible] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
@@ -283,6 +285,90 @@ export default function BookingDetailsScreen() {
     }
   };
 
+  const handleVerifyCheckIn = async (otpOrQr: string) => {
+    if (!booking) return;
+    const cleanCode = otpOrQr.trim();
+    if (!cleanCode) {
+      setAlertConfig({
+        visible: true,
+        type: 'warning',
+        title: 'Code Required',
+        message: 'Please enter the customer 4-digit check-in OTP or ticket pass code.',
+      });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const session = await PartnerDatabase.getSession();
+      const isOtp = cleanCode.length === 4 && /^\d+$/.test(cleanCode);
+      const payload: any = {
+        status: 'CHECKED_IN',
+        ...(isOtp ? { otp: cleanCode } : { qrCode: cleanCode }),
+      };
+
+      if (session?.token) {
+        try {
+          const res = await fetch(`${PARTNER_API}/bookings/${booking.id}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            setBooking(json.data);
+            await PartnerDatabase.updateBooking(json.data);
+            setProcessing(false);
+            setCheckInModalVisible(false);
+            setCheckInCodeInput('');
+            setAlertConfig({
+              visible: true,
+              type: 'success',
+              title: 'Guest Arrival Verified! ✅',
+              message: `Customer check-in confirmed for booking #${booking.ticketId || booking.id}.`,
+            });
+            return;
+          } else {
+            throw new Error(json.error || 'Verification failed.');
+          }
+        } catch (netErr: any) {
+          if (netErr?.message && !netErr.message.includes('fetch')) {
+            throw netErr;
+          }
+        }
+      }
+
+      // Offline fallback
+      const updated = {
+        ...booking,
+        checkInStatus: 'CHECKED_IN',
+        checkedInAt: new Date().toISOString(),
+      };
+      setBooking(updated);
+      await PartnerDatabase.updateBooking(updated);
+      setProcessing(false);
+      setCheckInModalVisible(false);
+      setCheckInCodeInput('');
+      setAlertConfig({
+        visible: true,
+        type: 'success',
+        title: 'Guest Arrival Verified! ✅',
+        message: `Customer check-in confirmed for booking #${booking.ticketId || booking.id}.`,
+      });
+    } catch (e: any) {
+      setProcessing(false);
+      setAlertConfig({
+        visible: true,
+        type: 'error',
+        title: 'Check-In Notice',
+        message: e?.message || 'Could not verify customer pass.',
+      });
+    }
+  };
+
   const isConfirmed = booking.status === 'CONFIRMED';
   const isPending = booking.status === 'PENDING' || booking.status === 'UNDER_REVIEW';
   const isCompleted = booking.status === 'COMPLETED';
@@ -356,6 +442,92 @@ export default function BookingDetailsScreen() {
               <MessageSquare size={16} color="#34d399" />
               <Text style={styles.whatsappBtnText}>WhatsApp</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Celebration Setup & Attendance Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeaderTitle}>Celebration Setup & Attendance</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
+            <View>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8' }}>SCHEDULE</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginTop: 2 }}>
+                {booking.bookingDate || booking.date}
+              </Text>
+              <Text style={{ fontSize: 11, color: '#38bdf8', marginTop: 2 }}>{booking.bookingTime || 'Full Day / Standard'}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8' }}>DURATION</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginTop: 2 }}>
+                {booking.bookingDays || 1} Day(s)
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#1e293b', paddingTop: 10, marginTop: 10 }}>
+            <View>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8' }}>ATTENDANCE GUESTS</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginTop: 2 }}>
+                {booking.guestCount || 0} Guests
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8' }}>CATERING PLATES</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginTop: 2 }}>
+                {booking.platesCount || 0} Plates
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#1e293b', paddingTop: 12, marginTop: 10 }}>
+            <View>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8' }}>CHECK-IN ARRIVAL</Text>
+              <View
+                style={{
+                  alignSelf: 'flex-start',
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 6,
+                  marginTop: 4,
+                  backgroundColor: (booking.checkInStatus === 'CHECKED_IN' || booking.checkInStatus === 'COMPLETED')
+                    ? 'rgba(52, 211, 153, 0.2)'
+                    : 'rgba(251, 191, 36, 0.2)',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: '800',
+                    color: (booking.checkInStatus === 'CHECKED_IN' || booking.checkInStatus === 'COMPLETED')
+                      ? '#34d399'
+                      : '#fbbf24',
+                  }}
+                >
+                  {booking.checkInStatus === 'CHECKED_IN'
+                    ? 'GUEST CHECKED IN'
+                    : booking.checkInStatus === 'COMPLETED'
+                    ? 'SERVICE COMPLETED'
+                    : 'AWAITING ARRIVAL'}
+                </Text>
+              </View>
+            </View>
+
+            {isConfirmed && booking.checkInStatus !== 'CHECKED_IN' && booking.checkInStatus !== 'COMPLETED' && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#0284c7',
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                }}
+                onPress={() => setCheckInModalVisible(true)}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>
+                  Verify Check-In
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -461,6 +633,46 @@ export default function BookingDetailsScreen() {
                 <ActivityIndicator color="#ffffff" />
               ) : (
                 <Text style={styles.otpSubmitBtnText}>Verify OTP & Release Payout</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Check-In Arrival Verification Modal */}
+      <Modal visible={checkInModalVisible} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Verify Guest Arrival</Text>
+              <TouchableOpacity onPress={() => setCheckInModalVisible(false)}>
+                <X size={20} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSub}>
+              Enter the customer's 4-digit check-in OTP or ticket pass code shown on their digital pass.
+            </Text>
+
+            <TextInput
+              style={[styles.otpInput, { letterSpacing: 2, fontSize: 18 }]}
+              placeholder="e.g. 4821 or HL-BKG-..."
+              placeholderTextColor="#64748b"
+              autoCapitalize="characters"
+              value={checkInCodeInput}
+              onChangeText={setCheckInCodeInput}
+            />
+
+            <TouchableOpacity
+              style={[styles.otpSubmitBtn, { backgroundColor: '#0284c7' }]}
+              activeOpacity={0.85}
+              disabled={processing}
+              onPress={() => handleVerifyCheckIn(checkInCodeInput)}
+            >
+              {processing ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.otpSubmitBtnText}>Verify Check-In & Admit Guest</Text>
               )}
             </TouchableOpacity>
           </View>

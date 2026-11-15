@@ -72,6 +72,10 @@ export default function AddServiceScreen() {
   const [location, setLocation] = useState('');
   const [features, setFeatures] = useState('');
   const [mapUrl, setMapUrl] = useState('');
+  const [baseHallPrice, setBaseHallPrice] = useState('');
+  const [pricePerPlate, setPricePerPlate] = useState('');
+  const [blackoutDatesInput, setBlackoutDatesInput] = useState('');
+  const [autoAccept, setAutoAccept] = useState(true);
 
   // Customizable Tier Packages
   const [packages, setPackages] = useState<PartnerServicePackage[]>([]);
@@ -132,7 +136,7 @@ export default function AddServiceScreen() {
       });
       return;
     }
-    const effectivePricing = pricingModel === 'PER_PERSON' && pricePerPerson 
+    const effectivePricing = pricingModel === 'PER_PERSON' && pricePerPerson
       ? parseFloat(pricePerPerson) * (parseInt(minGuests) || 50)
       : parseFloat(pricing);
 
@@ -177,6 +181,10 @@ export default function AddServiceScreen() {
         pricingUnit: pricingModel === 'PER_PERSON' ? 'PER_PLATE' : pricingUnit,
         pricingModel,
         pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
+        pricePerPlate: pricePerPlate ? parseFloat(pricePerPlate) : (pricePerPerson ? parseFloat(pricePerPerson) : undefined),
+        baseHallPrice: baseHallPrice ? parseFloat(baseHallPrice) : undefined,
+        autoAccept,
+        blackoutDates: blackoutDatesInput.split(',').map((d) => d.trim()).filter(Boolean),
         minGuests: parseInt(minGuests) || 50,
         maxGuests: parseInt(maxGuests) || 500,
         capacity: capacity ? parseInt(capacity) : (parseInt(maxGuests) || 500),
@@ -588,15 +596,84 @@ export default function AddServiceScreen() {
           onChangeText={setDescription}
         />
 
-        {/* Amenities */}
-        <Text style={styles.label}>Key Features & Highlights (Comma Separated)</Text>
+        {/* Advanced Booking & Reservation Rules */}
+        <Text style={[styles.sectionHeader, { marginTop: 20 }]}>Booking Rules & Availability Engine</Text>
+        <Text style={styles.sectionSub}>Configure custom rates, blackout dates, and acceptance modes</Text>
+
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Venue Base Hall Rate (₹)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 25000"
+              placeholderTextColor="#64748b"
+              keyboardType="numeric"
+              value={baseHallPrice}
+              onChangeText={setBaseHallPrice}
+            />
+          </View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.label}>Catering Rate / Plate (₹)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 550"
+              placeholderTextColor="#64748b"
+              keyboardType="numeric"
+              value={pricePerPlate}
+              onChangeText={setPricePerPlate}
+            />
+          </View>
+        </View>
+
+        <Text style={styles.label}>Blackout / Blocked Dates (Dates you are unavailable)</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Royal Mandap, Stage Lighting, Multi-Cuisine, Sound Rig, Generator Backup"
+          placeholder="e.g. 2026-11-25, 2026-12-05, 2026-12-31"
           placeholderTextColor="#64748b"
-          value={features}
-          onChangeText={setFeatures}
+          value={blackoutDatesInput}
+          onChangeText={setBlackoutDatesInput}
         />
+        <Text style={styles.hintText}>Separate blocked dates in YYYY-MM-DD format with commas</Text>
+
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: autoAccept ? '#064e3b' : '#1e293b',
+            borderWidth: 1.5,
+            borderColor: autoAccept ? '#10b981' : '#334155',
+            padding: 14,
+            borderRadius: 14,
+            marginTop: 10,
+            marginBottom: 20,
+          }}
+          onPress={() => setAutoAccept(!autoAccept)}
+          activeOpacity={0.8}
+        >
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+              {autoAccept ? '⚡ Instant Auto-Accept Enabled' : '⏳ Manual Review Mode'}
+            </Text>
+            <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+              {autoAccept
+                ? 'Paid reservations are confirmed immediately with live notification.'
+                : 'Customer payment is held for 24h partner approval.'}
+            </Text>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 8,
+              backgroundColor: autoAccept ? '#10b981' : '#64748b',
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '800', color: '#ffffff' }}>
+              {autoAccept ? 'INSTANT' : 'MANUAL'}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Submit Button */}
         <TouchableOpacity
