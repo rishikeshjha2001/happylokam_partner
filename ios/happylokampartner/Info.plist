@@ -45,6 +45,16 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+        <key>NSLocationWhenInUseUsageDescription</key>
+    <string>happylokam partner needs your location to set accurate venue coordinates for customers.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>happylokam partner uses Face ID for fast and secure partner panel login.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow happylokam partner to take photos of your celebration venue and listing packages.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow happylokam partner to select photos of your celebration venue from your library.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Allow happylokam partner to save celebration passes and invoices to your photos.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

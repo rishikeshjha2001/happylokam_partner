@@ -17,7 +17,12 @@
       "bundleIdentifier": "com.happylokam.partner",
       "buildNumber": "33",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "happylokam partner needs your location to set accurate venue coordinates for customers.",
+        "NSFaceIDUsageDescription": "happylokam partner uses Face ID for fast and secure partner panel login.",
+        "NSCameraUsageDescription": "Allow happylokam partner to take photos of your celebration venue and listing packages.",
+        "NSPhotoLibraryUsageDescription": "Allow happylokam partner to select photos of your celebration venue from your library.",
+        "NSPhotoLibraryAddUsageDescription": "Allow happylokam partner to save celebration passes and invoices to your photos."
       }
     },
     "android": {
@@ -49,7 +54,7 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/91793694-1bba-48c8-b966-69ed2dc26e5e"
     },
-    "runtimeVersion": "1.0.32",
+    "runtimeVersion": "1.0.33",
     "extra": {
       "router": {
         "origin": false

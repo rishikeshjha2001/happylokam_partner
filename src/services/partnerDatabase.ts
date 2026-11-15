@@ -261,6 +261,26 @@ class PartnerDatabase {
       console.warn('PartnerDatabase.cleanCache error:', e);
     }
   }
+  // ---- Change Account Password ----
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const session = await this.getSession();
+      const token = session?.token || '';
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://happylokam.com/api/v1';
+      const res = await fetch(`${API_URL}/partners/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      return data;
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Network error updating password' };
+    }
+  }
 }
 
 export default new PartnerDatabase();
