@@ -29,6 +29,7 @@ import {
   Sparkles,
   PhoneCall,
   MessageSquare,
+  Fingerprint,
 } from 'lucide-react-native';
 import PartnerDatabase from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
@@ -58,6 +59,24 @@ export default function SettingsScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
+  useEffect(() => {
+    PartnerDatabase.isBiometricEnabled().then(setBiometricEnabled);
+  }, []);
+
+  const handleToggleBiometric = async (val: boolean) => {
+    setBiometricEnabled(val);
+    await PartnerDatabase.setBiometricEnabled(val);
+    if (val) {
+      Alert.alert(
+        'Biometric Unlock Enabled 🛡️',
+        'You can now use your device Fingerprint or Face ID for fast biometric verification and quick sign-in.'
+      );
+    } else {
+      Alert.alert('Biometric Unlock Disabled', 'Standard password credentials will be required.');
+    }
+  };
 
   const handleChangePasswordSubmit = async () => {
     if (!newPassword.trim() || newPassword.length < 6) {
@@ -236,6 +255,22 @@ export default function SettingsScreen() {
             </View>
             <ChevronRight size={18} color="#64748b" />
           </TouchableOpacity>
+
+          <View style={[styles.switchRow, styles.rowBorder]}>
+            <View style={[styles.iconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)', marginRight: 12 }]}>
+              <Fingerprint size={18} color="#34d399" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>Biometric Quick Unlock</Text>
+              <Text style={styles.rowSub}>Fingerprint & Face ID login verification</Text>
+            </View>
+            <Switch
+              value={biometricEnabled}
+              onValueChange={handleToggleBiometric}
+              trackColor={{ false: '#1e293b', true: '#10b981' }}
+              thumbColor="#ffffff"
+            />
+          </View>
         </View>
 
         {/* System & OTA Updates */}

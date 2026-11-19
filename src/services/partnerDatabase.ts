@@ -290,6 +290,21 @@ class PartnerDatabase {
       return { success: false, error: err.message || 'Network error updating password' };
     }
   }
+  // ---- Biometric Settings ----
+  async isBiometricEnabled(): Promise<boolean> {
+    try {
+      const val = await AsyncStorage.getItem('@happylokam_partner_biometric_enabled');
+      return val === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  async setBiometricEnabled(enabled: boolean): Promise<void> {
+    try {
+      await AsyncStorage.setItem('@happylokam_partner_biometric_enabled', enabled ? 'true' : 'false');
+    } catch {}
+  }
 }
 
 export default new PartnerDatabase();
