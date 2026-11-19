@@ -10,6 +10,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -52,6 +53,20 @@ interface ReferralBooking {
 }
 
 export default function ReferralsScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const [code, setCode] = useState('');
   const [referralLink, setReferralLink] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');

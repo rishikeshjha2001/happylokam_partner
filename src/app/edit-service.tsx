@@ -11,6 +11,7 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -53,6 +54,20 @@ const PRICING_UNITS = [
 ];
 
 export default function EditServiceScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -87,6 +102,9 @@ export default function EditServiceScreen() {
   const [showAddPackage, setShowAddPackage] = useState(false);
   const [baseHallPrice, setBaseHallPrice] = useState('');
   const [pricePerPlate, setPricePerPlate] = useState('');
+  const [pricePerPlateVeg, setPricePerPlateVeg] = useState('');
+  const [pricePerPlateNonVeg, setPricePerPlateNonVeg] = useState('');
+  const [pricePerGuest, setPricePerGuest] = useState('');
   const [blackoutDatesInput, setBlackoutDatesInput] = useState('');
   const [autoAccept, setAutoAccept] = useState(true);
 
@@ -184,6 +202,9 @@ export default function EditServiceScreen() {
     if (item.packages) setPackages(item.packages);
     if (item.baseHallPrice) setBaseHallPrice(String(item.baseHallPrice));
     if (item.pricePerPlate) setPricePerPlate(String(item.pricePerPlate));
+    if (item.pricePerPlateVeg) setPricePerPlateVeg(String(item.pricePerPlateVeg));
+    if (item.pricePerPlateNonVeg) setPricePerPlateNonVeg(String(item.pricePerPlateNonVeg));
+    if (item.pricePerGuest) setPricePerGuest(String(item.pricePerGuest));
     if (item.blackoutDates) setBlackoutDatesInput(item.blackoutDates.join(', '));
     if (item.autoAccept !== undefined) setAutoAccept(Boolean(item.autoAccept));
   };
@@ -232,7 +253,10 @@ export default function EditServiceScreen() {
         pricingUnit,
         pricingModel,
         pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
-        pricePerPlate: pricePerPlate ? parseFloat(pricePerPlate) : undefined,
+        pricePerPlate: pricePerPlate ? parseFloat(pricePerPlate) : (pricePerPlateVeg ? parseFloat(pricePerPlateVeg) : (pricePerPerson ? parseFloat(pricePerPerson) : undefined)),
+        pricePerPlateVeg: pricePerPlateVeg ? parseFloat(pricePerPlateVeg) : (pricePerPlate ? parseFloat(pricePerPlate) : undefined),
+        pricePerPlateNonVeg: pricePerPlateNonVeg ? parseFloat(pricePerPlateNonVeg) : undefined,
+        pricePerGuest: pricePerGuest ? parseFloat(pricePerGuest) : (pricePerPerson ? parseFloat(pricePerPerson) : undefined),
         baseHallPrice: baseHallPrice ? parseFloat(baseHallPrice) : undefined,
         autoAccept,
         blackoutDates: blackoutDatesInput.split(',').map((d) => d.trim()).filter(Boolean),
@@ -479,6 +503,73 @@ export default function EditServiceScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+
+            {/* Veg / Non-Veg Rates & Minimum Guests Setup */}
+            <View style={{ marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
+              <Text style={[styles.inputLabel, { color: '#38bdf8' }]}>Detailed Culinary & Attendance Rates</Text>
+              
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.inputLabel, { color: '#4ade80' }]}>🟢 Veg Plate (₹)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={pricePerPlateVeg}
+                    onChangeText={setPricePerPlateVeg}
+                    placeholder="e.g. 550"
+                    placeholderTextColor="#64748b"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.inputLabel, { color: '#f87171' }]}>🔴 Non-Veg Plate (₹)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={pricePerPlateNonVeg}
+                    onChangeText={setPricePerPlateNonVeg}
+                    placeholder="e.g. 750"
+                    placeholderTextColor="#64748b"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Min Guests Req.</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={minGuests}
+                    onChangeText={setMinGuests}
+                    placeholder="e.g. 50"
+                    placeholderTextColor="#64748b"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Base Hall Price (₹)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={baseHallPrice}
+                    onChangeText={setBaseHallPrice}
+                    placeholder="e.g. 35000"
+                    placeholderTextColor="#64748b"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={{ marginTop: 10 }}>
+                <Text style={styles.inputLabel}>Extra Per-Guest Cost (₹)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={pricePerGuest}
+                  onChangeText={setPricePerGuest}
+                  placeholder="e.g. 250 (Optional)"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
           </View>
 

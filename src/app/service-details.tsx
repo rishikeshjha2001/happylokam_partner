@@ -8,6 +8,7 @@ import {
   Switch,
   ActivityIndicator,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -31,6 +32,20 @@ import { PARTNER_API } from '../constants/api';
 import CustomAlert from '../components/CustomAlert';
 
 export default function ServiceDetailsScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const params = useLocalSearchParams();
   const [service, setService] = useState<PartnerServiceItem | null>(null);
   const [isActive, setIsActive] = useState(true);

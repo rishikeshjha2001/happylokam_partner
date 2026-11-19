@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,6 +37,20 @@ import { PARTNER_API } from '../constants/api';
 import CustomAlert from '../components/CustomAlert';
 
 export default function BookingDetailsScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const params = useLocalSearchParams();
   const [booking, setBooking] = useState<PartnerBooking | null>(null);
   const [otpModalVisible, setOtpModalVisible] = useState(false);
@@ -472,12 +487,37 @@ export default function BookingDetailsScreen() {
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8' }}>CATERING PLATES</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8' }}>TOTAL CATERING PLATES</Text>
               <Text style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginTop: 2 }}>
-                {booking.platesCount || 0} Plates
+                {(booking.platesCount || ((booking.vegPlatesCount || 0) + (booking.nonVegPlatesCount || 0))) || 0} Plates
               </Text>
             </View>
           </View>
+
+          {/* Veg & Non-Veg Plates Breakdown */}
+          {((booking.vegPlatesCount && booking.vegPlatesCount > 0) || (booking.nonVegPlatesCount && booking.nonVegPlatesCount > 0)) && (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#090d16', padding: 10, borderRadius: 8, marginTop: 10, borderWidth: 1, borderColor: '#1e293b' }}>
+              <View>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#4ade80' }}>🟢 PURE VEG PLATES</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#4ade80', marginTop: 2 }}>
+                  {booking.vegPlatesCount || 0} Plates
+                </Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#f87171' }}>🔴 NON-VEG PLATES</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#f87171', marginTop: 2 }}>
+                  {booking.nonVegPlatesCount || 0} Plates
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {booking.notes && (
+            <View style={{ marginTop: 10, padding: 8, backgroundColor: '#0f172a', borderRadius: 6, borderWidth: 1, borderColor: '#1e293b' }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#38bdf8' }}>CUSTOMER NOTES</Text>
+              <Text style={{ fontSize: 12, color: '#e2e8f0', marginTop: 2 }}>{booking.notes}</Text>
+            </View>
+          )}
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#1e293b', paddingTop: 12, marginTop: 10 }}>
             <View>

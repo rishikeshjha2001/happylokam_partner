@@ -46,6 +46,8 @@ export interface PartnerServiceItem {
   pricingModel?: 'PER_PERSON' | 'FIXED_PACKAGE' | 'MANUAL_CUSTOM';
   pricePerPerson?: number;
   pricePerPlate?: number;
+  pricePerPlateVeg?: number;
+  pricePerPlateNonVeg?: number;
   baseHallPrice?: number;
   pricePerGuest?: number;
   availableCities?: string[];
@@ -88,6 +90,13 @@ export interface PartnerBooking {
   bookingDays?: number;
   guestCount?: number;
   platesCount?: number;
+  vegPlatesCount?: number;
+  nonVegPlatesCount?: number;
+  pricePerPlateVeg?: number;
+  pricePerPlateNonVeg?: number;
+  pricePerGuest?: number;
+  baseHallPrice?: number;
+  notes?: string;
   checkInOtp?: string;
   checkInStatus?: string;
   checkedInAt?: string;

@@ -49,11 +49,11 @@ export default function ServicesScreen() {
     message: '',
   });
 
-  // Android Back Button Handler
+  // Android Back Button Handler: return to Home tab
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        setShowExitModal(true);
+        router.replace('/(tabs)');
         return true;
       };
       const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);

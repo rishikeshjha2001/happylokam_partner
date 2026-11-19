@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -25,6 +26,20 @@ import PartnerDatabase from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
 
 export default function EditProfileScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const [businessName, setBusinessName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [email, setEmail] = useState('');

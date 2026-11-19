@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -56,6 +57,20 @@ const PRICING_UNITS = [
 ];
 
 export default function AddServiceScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const [name, setName] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [subCategory, setSubCategory] = useState('');
@@ -74,6 +89,9 @@ export default function AddServiceScreen() {
   const [mapUrl, setMapUrl] = useState('');
   const [baseHallPrice, setBaseHallPrice] = useState('');
   const [pricePerPlate, setPricePerPlate] = useState('');
+  const [pricePerPlateVeg, setPricePerPlateVeg] = useState('');
+  const [pricePerPlateNonVeg, setPricePerPlateNonVeg] = useState('');
+  const [pricePerGuest, setPricePerGuest] = useState('');
   const [blackoutDatesInput, setBlackoutDatesInput] = useState('');
   const [autoAccept, setAutoAccept] = useState(true);
 
@@ -181,7 +199,10 @@ export default function AddServiceScreen() {
         pricingUnit: pricingModel === 'PER_PERSON' ? 'PER_PLATE' : pricingUnit,
         pricingModel,
         pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
-        pricePerPlate: pricePerPlate ? parseFloat(pricePerPlate) : (pricePerPerson ? parseFloat(pricePerPerson) : undefined),
+        pricePerPlate: pricePerPlate ? parseFloat(pricePerPlate) : (pricePerPlateVeg ? parseFloat(pricePerPlateVeg) : (pricePerPerson ? parseFloat(pricePerPerson) : undefined)),
+        pricePerPlateVeg: pricePerPlateVeg ? parseFloat(pricePerPlateVeg) : (pricePerPlate ? parseFloat(pricePerPlate) : undefined),
+        pricePerPlateNonVeg: pricePerPlateNonVeg ? parseFloat(pricePerPlateNonVeg) : undefined,
+        pricePerGuest: pricePerGuest ? parseFloat(pricePerGuest) : (pricePerPerson ? parseFloat(pricePerPerson) : undefined),
         baseHallPrice: baseHallPrice ? parseFloat(baseHallPrice) : undefined,
         autoAccept,
         blackoutDates: blackoutDatesInput.split(',').map((d) => d.trim()).filter(Boolean),
@@ -388,28 +409,85 @@ export default function AddServiceScreen() {
 
         {/* Conditional Pricing Inputs */}
         {pricingModel === 'PER_PERSON' ? (
-          <View style={styles.priceRowBox}>
-            <View style={{ flex: 1.2 }}>
-              <Text style={styles.label}>Price Per Person / Plate (₹) *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 750"
-                placeholderTextColor="#64748b"
-                keyboardType="numeric"
-                value={pricePerPerson}
-                onChangeText={setPricePerPerson}
-              />
+          <View>
+            <View style={styles.priceRowBox}>
+              <View style={{ flex: 1.2 }}>
+                <Text style={styles.label}>Base Price Per Person (₹) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 750"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                  value={pricePerPerson}
+                  onChangeText={(val) => {
+                    setPricePerPerson(val);
+                    if (!pricePerPlateVeg) setPricePerPlateVeg(val);
+                  }}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.label}>Min Guests *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 50"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                  value={minGuests}
+                  onChangeText={setMinGuests}
+                />
+              </View>
             </View>
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.label}>Min Guests</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 50"
-                placeholderTextColor="#64748b"
-                keyboardType="numeric"
-                value={minGuests}
-                onChangeText={setMinGuests}
-              />
+
+            {/* Veg and Non-Veg Plate Rates */}
+            <View style={[styles.priceRowBox, { marginTop: 10 }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: '#4ade80' }]}>🟢 Veg Plate Rate (₹)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 550"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                  value={pricePerPlateVeg}
+                  onChangeText={setPricePerPlateVeg}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={[styles.label, { color: '#f87171' }]}>🔴 Non-Veg Plate Rate (₹)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 750"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                  value={pricePerPlateNonVeg}
+                  onChangeText={setPricePerPlateNonVeg}
+                />
+              </View>
+            </View>
+
+            {/* Base Venue Hire & Additional Guest Rate */}
+            <View style={[styles.priceRowBox, { marginTop: 10 }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Base Hall / Venue Price (₹)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 35000 (Optional)"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                  value={baseHallPrice}
+                  onChangeText={setBaseHallPrice}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.label}>Extra Per-Guest Cost (₹)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 250 (Optional)"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                  value={pricePerGuest}
+                  onChangeText={setPricePerGuest}
+                />
+              </View>
             </View>
           </View>
         ) : (

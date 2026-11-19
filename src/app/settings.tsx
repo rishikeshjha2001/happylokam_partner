@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -34,6 +35,20 @@ import CustomAlert from '../components/CustomAlert';
 import { checkOTAUpdates, applyOTAUpdate } from '../services/otaService';
 
 export default function SettingsScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const [pushNotifs, setPushNotifs] = useState(true);
   const [bookingAlerts, setBookingAlerts] = useState(true);
   const [emailDigest, setEmailDigest] = useState(false);

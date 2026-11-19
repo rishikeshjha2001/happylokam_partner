@@ -45,11 +45,11 @@ export default function ProfileScreen() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [alertConfig, setAlertConfig] = useState<CustomAlertOptions | null>(null);
 
-  // Hardware Back Handler for Exit Confirmation
+  // Hardware Back Handler: return to Home tab
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        setShowExitModal(true);
+        router.replace('/(tabs)');
         return true;
       };
       const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);

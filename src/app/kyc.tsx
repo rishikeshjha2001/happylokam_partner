@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -27,6 +28,20 @@ import CustomAlert from '../components/CustomAlert';
 import { PARTNER_API } from '../constants/api';
 
 export default function KycScreen() {
+  // Hardware Back Button Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
   const [gstNumber, setGstNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [bankAccount, setBankAccount] = useState('');
