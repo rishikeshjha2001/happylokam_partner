@@ -30,6 +30,7 @@ import {
   PhoneCall,
   MessageSquare,
   Fingerprint,
+  Trash2,
 } from 'lucide-react-native';
 import PartnerDatabase from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
@@ -161,6 +162,35 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleCleanAllData = () => {
+    Alert.alert(
+      'Clean All Partner Data & Bookings?',
+      'This will completely wipe old cached reservations, test bookings, and local data to give you a fresh, clean dashboard.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clean Now',
+          style: 'destructive',
+          onPress: async () => {
+            await PartnerDatabase.cleanAllPartnerData();
+            try {
+              const session = await PartnerDatabase.getSession();
+              if (session?.token) {
+                const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://happylokam.com/api/v1';
+                await fetch(`${API_URL}/partners/reset-data`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${session.token}` },
+                }).catch(() => {});
+              }
+            } catch {}
+            Alert.alert('Data Cleaned Successfully ✨', 'All old partner bookings, test data, and cached records have been cleared.');
+            router.replace('/(tabs)');
+          },
+        },
+      ]
+    );
+  };
+
   const handleLogout = () => {
     setAlertConfig({
       visible: true,
@@ -283,6 +313,17 @@ export default function SettingsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Check for Latest Updates</Text>
               <Text style={styles.rowSub}>Verify cloud synchronization and cache</Text>
+            </View>
+            <ChevronRight size={18} color="#64748b" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.navRow, styles.rowBorder]} onPress={handleCleanAllData}>
+            <View style={[styles.iconBox, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+              <Trash2 size={18} color="#f87171" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowTitle, { color: '#f87171' }]}>Clean All Old Partner Data & Bookings</Text>
+              <Text style={styles.rowSub}>Clear old cached reservations and reset dashboard</Text>
             </View>
             <ChevronRight size={18} color="#64748b" />
           </TouchableOpacity>

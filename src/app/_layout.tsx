@@ -7,7 +7,7 @@ import PartnerDatabase from '../services/partnerDatabase';
 
 export default function RootLayout() {
   useEffect(() => {
-    void PartnerDatabase.migrateOperationalCache('2026-11-04-clean-release-v29');
+    void PartnerDatabase.migrateOperationalCache('2026-11-20-clean-wipe-v36');
     void checkAndApplyOTAUpdates();
   }, []);
 

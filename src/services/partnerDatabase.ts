@@ -246,11 +246,29 @@ class PartnerDatabase {
     }
   }
 
+  async cleanAllPartnerData(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        KEYS.BOOKINGS,
+        KEYS.DASHBOARD,
+        KEYS.SERVICES,
+        KEYS.NOTIFICATIONS,
+      ]);
+      const session = await this.getSession();
+      if (session) {
+        session.walletBalance = 0;
+        await this.saveSession(session);
+      }
+    } catch (e) {
+      console.warn('PartnerDatabase.cleanAllPartnerData error:', e);
+    }
+  }
+
   async migrateOperationalCache(version: string): Promise<void> {
     try {
       const installedVersion = await AsyncStorage.getItem(KEYS.DATA_VERSION);
       if (installedVersion === version) return;
-      await this.resetWalletAndBookings();
+      await this.cleanAllPartnerData();
       await AsyncStorage.setItem(KEYS.DATA_VERSION, version);
     } catch (e) {
       console.warn('PartnerDatabase.migrateOperationalCache error:', e);
