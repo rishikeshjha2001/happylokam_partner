@@ -143,6 +143,7 @@ export interface PartnerBooking {
   baseHallPrice?: number;
   notes?: string;
   checkInOtp?: string;
+  completionOtp?: string;
   checkInStatus?: string;
   checkedInAt?: string;
   status: string;
