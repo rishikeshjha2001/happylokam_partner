@@ -238,23 +238,107 @@ class PartnerDatabase {
 
   // ---- Bookings ----
   async saveBookings(bookings: PartnerBooking[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.BOOKINGS, JSON.stringify(bookings));
+    const serialized = JSON.stringify(bookings);
+    await AsyncStorage.setItem(KEYS.BOOKINGS, serialized);
+    // Realtime dual-sync to user app shared storage key
+    try {
+      await AsyncStorage.setItem('@happylokam_partner_bookings_v2', serialized);
+    } catch {}
   }
 
   async getBookings(): Promise<PartnerBooking[]> {
-    const raw = await AsyncStorage.getItem(KEYS.BOOKINGS);
-    return raw ? JSON.parse(raw) : [];
+    try {
+      const rawPrimary = await AsyncStorage.getItem(KEYS.BOOKINGS);
+      const rawSecondary = await AsyncStorage.getItem('@happylokam_partner_bookings_v2');
+      const primary: PartnerBooking[] = rawPrimary ? JSON.parse(rawPrimary) : [];
+      const secondary: PartnerBooking[] = rawSecondary ? JSON.parse(rawSecondary) : [];
+
+      // Deduplicate by booking ID, prioritizing latest updated
+      const map = new Map<string, PartnerBooking>();
+      [...secondary, ...primary].forEach((b) => {
+        if (b && b.id) map.set(b.id, b);
+      });
+      return Array.from(map.values()).sort((a, b) => {
+        const timeA = new Date(a.date || a.bookingDate || a.createdAt || 0).getTime();
+        const timeB = new Date(b.date || b.bookingDate || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+    } catch (e) {
+      return [];
+    }
   }
 
   async updateBooking(booking: PartnerBooking): Promise<void> {
     const existing = await this.getBookings();
     const index = existing.findIndex((b) => b.id === booking.id);
     if (index >= 0) {
-      existing[index] = booking;
+      existing[index] = { ...existing[index], ...booking };
     } else {
       existing.unshift(booking);
     }
     await this.saveBookings(existing);
+  }
+
+  // ---- Live Dashboard Stats Computation ----
+  async getLiveDashboardStats(): Promise<DashboardStats> {
+    try {
+      const [bookings, services] = await Promise.all([
+        this.getBookings(),
+        this.getServices(),
+      ]);
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
+      let totalRevenue = 0;
+      let monthlyRevenue = 0;
+      let pendingBookings = 0;
+      let completedBookings = 0;
+      let cancelledBookings = 0;
+
+      bookings.forEach((b) => {
+        const status = (b.status || 'PENDING').toUpperCase();
+        if (status === 'PENDING' || status === 'UNDER_REVIEW') pendingBookings++;
+        else if (status === 'COMPLETED') completedBookings++;
+        else if (status === 'CANCELLED' || status === 'REJECTED') cancelledBookings++;
+
+        if (status !== 'CANCELLED' && status !== 'REJECTED') {
+          const amt = Number(b.totalAmount) || Number(b.baseAmount) || 0;
+          totalRevenue += amt;
+
+          const bDate = new Date(b.date || b.bookingDate || b.createdAt || Date.now());
+          if (bDate.getFullYear() === currentYear && bDate.getMonth() === currentMonth) {
+            monthlyRevenue += amt;
+          }
+        }
+      });
+
+      const totalServices = services.length;
+      const activeServices = services.filter((s) => s.isActive !== false).length;
+
+      return {
+        totalBookings: bookings.length,
+        pendingBookings,
+        completedBookings,
+        cancelledBookings,
+        totalServices,
+        activeServices,
+        totalRevenue: Math.round(totalRevenue),
+        monthlyRevenue: Math.round(monthlyRevenue),
+      };
+    } catch {
+      return {
+        totalBookings: 0,
+        pendingBookings: 0,
+        completedBookings: 0,
+        cancelledBookings: 0,
+        totalServices: 0,
+        activeServices: 0,
+        totalRevenue: 0,
+        monthlyRevenue: 0,
+      };
+    }
   }
 
   // ---- Notifications ----

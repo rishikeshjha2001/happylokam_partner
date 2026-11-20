@@ -27,13 +27,16 @@ import {
   Ban,
   ChevronRight,
   Sparkles,
+  MessageSquare,
+  Users,
+  Utensils,
 } from 'lucide-react-native';
 import { PARTNER_API } from '../../constants/api';
 import PartnerDatabase, { PartnerBooking } from '../../services/partnerDatabase';
 import ExitConfirmModal from '../../components/ExitConfirmModal';
 import CustomAlert, { CustomAlertOptions } from '../../components/CustomAlert';
 
-const STATUS_FILTERS = ['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
+const STATUS_FILTERS = ['ALL', 'PENDING', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED', 'CANCELLED'];
 
 export default function BookingsScreen() {
   const [bookings, setBookings] = useState<PartnerBooking[]>([]);
@@ -173,6 +176,20 @@ export default function BookingsScreen() {
     Linking.openURL(`tel:${phone}`);
   };
 
+  const handleWhatsAppCustomer = (phone?: string, customerName?: string, venueName?: string, date?: string) => {
+    if (!phone) {
+      setAlertConfig({
+        type: 'info',
+        title: 'WhatsApp Contact',
+        message: 'Customer phone number is not available for this record.',
+      });
+      return;
+    }
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const msg = encodeURIComponent(`Hello ${customerName || 'Customer'}, regarding your booking for ${venueName || 'happylokam Service'} on ${date || 'the scheduled date'}...`);
+    Linking.openURL(`https://wa.me/${cleanPhone}?text=${msg}`);
+  };
+
   const handleOpenBookingDetails = (id: string) => {
     router.push({
       pathname: '/booking-details',
@@ -189,6 +206,14 @@ export default function BookingsScreen() {
           border: '#15803d',
           label: 'Confirmed',
           icon: <CheckCircle size={12} color="#4ade80" />,
+        };
+      case 'CHECKED_IN':
+        return {
+          bg: '#082f49',
+          text: '#38bdf8',
+          border: '#0284c7',
+          label: 'Guest Checked In',
+          icon: <CheckCheck size={12} color="#38bdf8" />,
         };
       case 'COMPLETED':
         return {
@@ -274,9 +299,14 @@ export default function BookingsScreen() {
         ) : (
           filteredBookings.map((b) => {
             const badge = getStatusBadge(b.status);
-            const isPending = b.status === 'PENDING';
+            const isPending = b.status === 'PENDING' || b.status === 'UNDER_REVIEW';
             const isConfirmed = b.status === 'CONFIRMED';
+            const isCheckedIn = b.status === 'CHECKED_IN';
             const isActionLoading = actionLoadingId === b.id;
+            const totalPlates = b.platesCount || ((b.vegPlatesCount || 0) + (b.nonVegPlatesCount || 0));
+            const customerName = b.customerName || b.user?.name || 'Customer';
+            const customerPhone = b.customerPhone || b.user?.phone;
+            const eventDate = b.bookingDate || b.date;
 
             return (
               <TouchableOpacity
@@ -291,10 +321,19 @@ export default function BookingsScreen() {
                     <View style={styles.avatar}>
                       <User size={18} color="#93c5fd" />
                     </View>
-                    <View>
-                      <Text style={styles.customerName}>{b.user?.name || 'Customer'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.customerName}>{customerName}</Text>
+                        {b.celebrationType ? (
+                          <View style={styles.miniCelebPill}>
+                            <Text style={styles.miniCelebPillText}>
+                              {b.celebrationType.replace(/_/g, ' ')}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
                       <Text style={styles.bookingDate}>
-                        📅 {new Date(b.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        📅 {eventDate} {b.bookingDays ? `• ${b.bookingDays} Day(s)` : ''}
                       </Text>
                     </View>
                   </View>
@@ -307,19 +346,32 @@ export default function BookingsScreen() {
 
                 {/* Details Box */}
                 <View style={styles.detailsBox}>
-                  {b.venue?.name ? (
+                  <View style={styles.detailRow}>
+                    <MapPin size={14} color="#94a3b8" />
+                    <Text style={styles.detailText}>{b.serviceName || b.venue?.name || 'Celebration Service'}</Text>
+                  </View>
+
+                  {/* Plates or Guests Attendance */}
+                  {Boolean(totalPlates > 0) ? (
                     <View style={styles.detailRow}>
-                      <MapPin size={14} color="#94a3b8" />
-                      <Text style={styles.detailText}>{b.venue.name}</Text>
+                      <Utensils size={14} color="#4ade80" />
+                      <Text style={[styles.detailText, { color: '#e2e8f0' }]}>
+                        {totalPlates} Plates {Boolean(b.vegPlatesCount || b.nonVegPlatesCount) ? `(🟢 ${b.vegPlatesCount || 0} Veg + 🔴 ${b.nonVegPlatesCount || 0} Non-Veg)` : ''}
+                      </Text>
                     </View>
-                  ) : null}
+                  ) : (
+                    <View style={styles.detailRow}>
+                      <Users size={14} color="#60a5fa" />
+                      <Text style={styles.detailText}>{b.guestCount || 50} Expected Guests</Text>
+                    </View>
+                  )}
 
                   <View style={styles.detailRow}>
                     <DollarSign size={14} color="#60a5fa" />
                     <Text style={styles.priceText}>
-                      ₹{b.totalAmount.toLocaleString('en-IN')}{' '}
+                      ₹{(b.totalAmount || b.baseAmount || 0).toLocaleString('en-IN')}{' '}
                       <Text style={styles.paymentStatusText}>
-                        ({b.paymentStatus || 'Advance Verified'})
+                        ({b.paymentStatus || 'Verified'})
                       </Text>
                     </Text>
                   </View>
@@ -327,15 +379,25 @@ export default function BookingsScreen() {
 
                 {/* Action Buttons */}
                 <View style={styles.actionRow}>
-                  {b.user?.phone ? (
-                    <TouchableOpacity
-                      style={styles.callBtn}
-                      activeOpacity={0.8}
-                      onPress={() => handleCallCustomer(b.user?.phone)}
-                    >
-                      <Phone size={13} color="#60a5fa" />
-                      <Text style={styles.callBtnText}>Call</Text>
-                    </TouchableOpacity>
+                  {customerPhone ? (
+                    <>
+                      <TouchableOpacity
+                        style={styles.callBtn}
+                        activeOpacity={0.8}
+                        onPress={() => handleCallCustomer(customerPhone)}
+                      >
+                        <Phone size={13} color="#60a5fa" />
+                        <Text style={styles.callBtnText}>Call</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.waBtn}
+                        activeOpacity={0.8}
+                        onPress={() => handleWhatsAppCustomer(customerPhone, customerName, b.serviceName || b.venue?.name, eventDate)}
+                      >
+                        <MessageSquare size={13} color="#22c55e" />
+                        <Text style={styles.waBtnText}>WhatsApp</Text>
+                      </TouchableOpacity>
+                    </>
                   ) : null}
 
                   <TouchableOpacity
@@ -343,12 +405,12 @@ export default function BookingsScreen() {
                     activeOpacity={0.8}
                     onPress={() => handleOpenBookingDetails(b.id)}
                   >
-                    <Text style={styles.detailsBtnText}>View Details</Text>
+                    <Text style={styles.detailsBtnText}>Details</Text>
                     <ChevronRight size={13} color="#94a3b8" />
                   </TouchableOpacity>
 
                   {isActionLoading ? (
-                    <ActivityIndicator size="small" color="#3b82f6" style={{ marginLeft: 12 }} />
+                    <ActivityIndicator size="small" color="#3b82f6" style={{ marginLeft: 8 }} />
                   ) : (
                     <>
                       {isPending ? (
@@ -372,10 +434,20 @@ export default function BookingsScreen() {
 
                       {isConfirmed ? (
                         <TouchableOpacity
-                          style={[styles.btnAction, styles.btnComplete]}
-                          onPress={() => handleUpdateStatus(b.id, 'COMPLETED')}
+                          style={[styles.btnAction, { backgroundColor: '#0284c7' }]}
+                          onPress={() => handleOpenBookingDetails(b.id)}
                         >
                           <CheckCheck size={13} color="#ffffff" />
+                          <Text style={styles.btnActionText}>Verify Check-In</Text>
+                        </TouchableOpacity>
+                      ) : null}
+
+                      {isCheckedIn ? (
+                        <TouchableOpacity
+                          style={[styles.btnAction, styles.btnComplete]}
+                          onPress={() => handleOpenBookingDetails(b.id)}
+                        >
+                          <Sparkles size={13} color="#ffffff" />
                           <Text style={styles.btnActionText}>Complete</Text>
                         </TouchableOpacity>
                       ) : null}
@@ -529,6 +601,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
   },
+  miniCelebPill: {
+    backgroundColor: '#7c3aed20',
+    borderWidth: 1,
+    borderColor: '#a855f750',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  miniCelebPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#c084fc',
+    textTransform: 'capitalize',
+  },
   bookingDate: {
     fontSize: 12,
     color: '#94a3b8',
@@ -588,11 +674,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 8,
-    marginRight: 'auto',
   },
   callBtnText: {
     fontSize: 12,
     color: '#60a5fa',
+    fontWeight: '600',
+  },
+  waBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#14532d30',
+    borderWidth: 1,
+    borderColor: '#22c55e40',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    marginRight: 'auto',
+  },
+  waBtnText: {
+    fontSize: 12,
+    color: '#4ade80',
     fontWeight: '600',
   },
   detailsBtn: {

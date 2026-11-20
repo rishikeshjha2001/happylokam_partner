@@ -385,8 +385,12 @@ export default function BookingDetailsScreen() {
   };
 
   const isConfirmed = booking.status === 'CONFIRMED';
+  const isCheckedIn = booking.status === 'CHECKED_IN' || booking.checkInStatus === 'CHECKED_IN';
   const isPending = booking.status === 'PENDING' || booking.status === 'UNDER_REVIEW';
-  const isCompleted = booking.status === 'COMPLETED';
+  const isCompleted = booking.status === 'COMPLETED' || booking.status === 'SUCCESS';
+  const isCancelled = booking.status === 'CANCELLED';
+
+  const partnerNetEarnings = (booking as any).partnerPayout || (booking as any).payoutAmount || Math.round((booking.totalAmount || 0) * 0.95);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -405,9 +409,18 @@ export default function BookingDetailsScreen() {
         {/* Status Card */}
         <View style={styles.statusCard}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.ticketId}>TICKET #{booking.ticketId || 'HLP-BKG-8891'}</Text>
-            <Text style={styles.serviceTitle}>{booking.venue?.name || 'Booked Service'}</Text>
-            <Text style={styles.eventDate}>📅 Event Date: {booking.date}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+              <Text style={styles.ticketId}>TICKET #{booking.ticketId || 'HLP-BKG-8891'}</Text>
+              {(booking as any).celebrationType ? (
+                <View style={styles.celebrationPill}>
+                  <Text style={styles.celebrationPillText}>
+                    🎉 {String((booking as any).celebrationType).replace(/_/g, ' ')}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.serviceTitle}>{booking.venue?.name || (booking as any).serviceName || 'Booked Service'}</Text>
+            <Text style={styles.eventDate}>📅 Event Date: {booking.bookingDate || booking.date}</Text>
           </View>
           <View
             style={[
@@ -415,8 +428,12 @@ export default function BookingDetailsScreen() {
               {
                 backgroundColor: isCompleted
                   ? 'rgba(52, 211, 153, 0.15)'
+                  : isCheckedIn
+                  ? 'rgba(168, 85, 247, 0.2)'
                   : isConfirmed
                   ? 'rgba(59, 130, 246, 0.15)'
+                  : isCancelled
+                  ? 'rgba(239, 68, 68, 0.15)'
                   : 'rgba(251, 191, 36, 0.15)',
               },
             ]}
@@ -425,11 +442,19 @@ export default function BookingDetailsScreen() {
               style={[
                 styles.statusBadgeText,
                 {
-                  color: isCompleted ? '#34d399' : isConfirmed ? '#60a5fa' : '#fbbf24',
+                  color: isCompleted
+                    ? '#34d399'
+                    : isCheckedIn
+                    ? '#c084fc'
+                    : isConfirmed
+                    ? '#60a5fa'
+                    : isCancelled
+                    ? '#f87171'
+                    : '#fbbf24',
                 },
               ]}
             >
-              {booking.status}
+              {booking.status.replace(/_/g, ' ')}
             </Text>
           </View>
         </View>
@@ -590,6 +615,15 @@ export default function BookingDetailsScreen() {
             <Text style={styles.totalLabel}>Total Booking Amount</Text>
             <Text style={styles.totalVal}>₹{booking.totalAmount.toLocaleString('en-IN')}</Text>
           </View>
+
+          {/* Net Partner Payout Card */}
+          <View style={styles.payoutHighlightBox}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.payoutHighlightLabel}>NET PARTNER PAYOUT</Text>
+              <Text style={styles.payoutHighlightSub}>Settled directly to your verified bank account</Text>
+            </View>
+            <Text style={styles.payoutHighlightVal}>₹{partnerNetEarnings.toLocaleString('en-IN')}</Text>
+          </View>
         </View>
 
         {/* Action Buttons depending on status */}
@@ -619,15 +653,41 @@ export default function BookingDetailsScreen() {
               <Text style={styles.declineBtnText}>Decline</Text>
             </TouchableOpacity>
           </View>
-        ) : isConfirmed ? (
+        ) : isConfirmed && !isCheckedIn ? (
+          <View style={{ gap: 10 }}>
+            <TouchableOpacity
+              style={[styles.completeBtn, { backgroundColor: '#0284c7' }]}
+              activeOpacity={0.85}
+              onPress={() => setCheckInModalVisible(true)}
+            >
+              <FileCheck size={18} color="#ffffff" />
+              <Text style={styles.completeBtnText}>Step 1: Verify Guest Check-In</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.completeBtn, { backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155' }]}
+              activeOpacity={0.85}
+              onPress={() => setOtpModalVisible(true)}
+            >
+              <Sparkles size={18} color="#a855f7" />
+              <Text style={[styles.completeBtnText, { color: '#c084fc' }]}>Direct Completion OTP</Text>
+            </TouchableOpacity>
+          </View>
+        ) : isCheckedIn ? (
           <TouchableOpacity
             style={styles.completeBtn}
             activeOpacity={0.85}
             onPress={() => setOtpModalVisible(true)}
           >
             <Sparkles size={18} color="#ffffff" />
-            <Text style={styles.completeBtnText}>Verify OTP & Complete Service</Text>
+            <Text style={styles.completeBtnText}>Step 2: Verify Completion OTP & Release Payout</Text>
           </TouchableOpacity>
+        ) : isCancelled ? (
+          <View style={[styles.completedNotice, { borderColor: '#7f1d1d' }]}>
+            <XCircle size={20} color="#f87171" />
+            <Text style={[styles.completedNoticeText, { color: '#f87171' }]}>
+              This reservation was declined or cancelled.
+            </Text>
+          </View>
         ) : (
           <View style={styles.completedNotice}>
             <CheckCircle2 size={20} color="#34d399" />
@@ -802,6 +862,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ticketId: { fontSize: 11, fontWeight: '800', color: '#60a5fa', letterSpacing: 0.8 },
+  celebrationPill: {
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(168, 85, 247, 0.4)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  celebrationPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#c084fc',
+    textTransform: 'capitalize',
+  },
   serviceTitle: { fontSize: 17, fontWeight: '800', color: '#ffffff', marginTop: 4 },
   eventDate: { fontSize: 13, color: '#94a3b8', marginTop: 4, fontWeight: '600' },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
@@ -863,6 +937,33 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
   totalVal: { fontSize: 18, fontWeight: '900', color: '#60a5fa' },
+  payoutHighlightBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 14,
+  },
+  payoutHighlightLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#4ade80',
+    letterSpacing: 0.5,
+  },
+  payoutHighlightSub: {
+    fontSize: 11,
+    color: '#86efac',
+    marginTop: 2,
+  },
+  payoutHighlightVal: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#22c55e',
+  },
   actionGrid: { flexDirection: 'row', gap: 12, marginTop: 10 },
   acceptBtn: {
     flex: 2,

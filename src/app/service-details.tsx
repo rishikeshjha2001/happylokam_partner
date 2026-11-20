@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   StatusBar,
   BackHandler,
+  Linking,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -26,10 +28,32 @@ import {
   XCircle,
   Building2,
   FileCheck,
+  Car,
+  Wind,
+  Zap,
+  Music,
+  Utensils,
+  Bed,
+  ShieldCheck,
+  Navigation,
+  Layers,
 } from 'lucide-react-native';
 import PartnerDatabase, { PartnerServiceItem } from '../services/partnerDatabase';
 import { PARTNER_API } from '../constants/api';
 import CustomAlert from '../components/CustomAlert';
+
+const { width } = Dimensions.get('window');
+
+const CELEBRATION_NAMES: Record<string, string> = {
+  WEDDING: '💍 Wedding & Reception',
+  BIRTHDAY: '🎂 Birthday & Milestone',
+  OFFICE_EVENTS: '🏢 Corporate & Office',
+  ANNIVERSARY: '🥂 Anniversary & Romance',
+  COCKTAIL_PARTY: '🎶 Cocktail & Social Night',
+  FESTIVE: '🌸 Festive & Religious Puja',
+  REUNION: '🎓 Farewell & Reunion',
+  BABY_SHOWER: '👶 Baby Shower & Naming',
+};
 
 export default function ServiceDetailsScreen() {
   // Hardware Back Button Handler
@@ -263,6 +287,238 @@ export default function ServiceDetailsScreen() {
           <Text style={styles.descriptionText}>{service.description}</Text>
         </View>
 
+        {/* Celebration Custom Pricing Matrix */}
+        {Boolean(service.celebrationPricing && Object.keys(service.celebrationPricing).length > 0) && (
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={16} color="#f43f5e" />
+                <Text style={styles.cardSectionTitle}>Celebration Custom Rates Matrix</Text>
+              </View>
+              <View style={styles.badgePill}>
+                <Text style={styles.badgePillText}>{Object.keys(service.celebrationPricing || {}).length} Themes Configured</Text>
+              </View>
+            </View>
+
+            {Object.entries(service.celebrationPricing || {}).map(([celebKey, rates]: [string, any]) => {
+              const label = CELEBRATION_NAMES[celebKey] || celebKey.replace(/_/g, ' ');
+              const hasHall = rates?.baseHallPrice !== undefined && Number(rates.baseHallPrice) > 0;
+              const hasVeg = rates?.pricePerPlateVeg !== undefined && Number(rates.pricePerPlateVeg) > 0;
+              const hasNonVeg = rates?.pricePerPlateNonVeg !== undefined && Number(rates.pricePerPlateNonVeg) > 0;
+
+              return (
+                <View key={celebKey} style={styles.celebPriceRowCard}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.celebTitleText}>{label}</Text>
+                    {hasHall ? (
+                      <Text style={styles.celebHallText}>
+                        Hall Base: <Text style={{ color: '#ffffff', fontWeight: '800' }}>₹{Number(rates.baseHallPrice).toLocaleString('en-IN')}</Text>
+                      </Text>
+                    ) : (
+                      <Text style={styles.celebHallText}>Standard Hall Base</Text>
+                    )}
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                    {hasVeg && (
+                      <Text style={styles.celebVegRateText}>
+                        🟢 Veg: ₹{rates.pricePerPlateVeg}/plt
+                      </Text>
+                    )}
+                    {hasNonVeg && (
+                      <Text style={styles.celebNonVegRateText}>
+                        🔴 Non-Veg: ₹{rates.pricePerPlateNonVeg}/plt
+                      </Text>
+                    )}
+                    {!hasVeg && !hasNonVeg && (
+                      <Text style={{ fontSize: 11, color: '#64748b' }}>Default Package</Text>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Venue Amenities & Parking Specifications */}
+        {(() => {
+          const p = service.amenitiesPolicy || {};
+          const cars = p.parkingCapacityCars !== undefined ? p.parkingCapacityCars : 100;
+          const bikes = p.parkingCapacityBikes !== undefined ? p.parkingCapacityBikes : 200;
+          const hasValet = p.valetAvailable ?? true;
+          const hasAc = p.centralAc !== false;
+          const hasDg = p.powerBackup || '100% DG Generator Backup';
+          const bridal = p.bridalRoomsCount !== undefined ? p.bridalRoomsCount : 2;
+          const guestR = p.guestRoomsCount !== undefined ? p.guestRoomsCount : 4;
+          const djCutoff = p.djCutoffTime || '10:30 PM';
+          const djPol = p.djPolicy || 'In-house DJ Permitted';
+          const catPol = p.cateringPolicy || 'In-house & Outside Catering';
+          const alcPol = p.alcoholPolicy || 'Allowed (with 1-Day Permit)';
+          const outDec = p.outsideDecoratorAllowed !== false;
+          const cctv = p.cctvSecurity !== false;
+
+          return (
+            <View style={styles.card}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Car size={16} color="#38bdf8" />
+                  <Text style={styles.cardSectionTitle}>Venue Amenities & Parking</Text>
+                </View>
+                <View style={[styles.badgePill, { backgroundColor: 'rgba(56, 189, 248, 0.12)' }]}>
+                  <ShieldCheck size={11} color="#38bdf8" />
+                  <Text style={[styles.badgePillText, { color: '#38bdf8' }]}>Partner Specs</Text>
+                </View>
+              </View>
+
+              {/* 2-column Grid */}
+              <View style={styles.amenitiesGrid}>
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: '#1e293b' }]}>
+                    <Car size={16} color="#60a5fa" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{cars}+ Cars</Text>
+                    <Text style={styles.amenitySub}>Car Parking</Text>
+                  </View>
+                </View>
+
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: '#1e293b' }]}>
+                    <Car size={16} color="#38bdf8" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{bikes}+ Bikes</Text>
+                    <Text style={styles.amenitySub}>2-Wheeler Parking</Text>
+                  </View>
+                </View>
+
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: hasValet ? 'rgba(52, 211, 153, 0.15)' : '#1e293b' }]}>
+                    <CheckCircle2 size={16} color={hasValet ? '#34d399' : '#64748b'} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{hasValet ? 'Available' : 'Self Parking'}</Text>
+                    <Text style={styles.amenitySub}>Valet Parking</Text>
+                  </View>
+                </View>
+
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: '#1e293b' }]}>
+                    <Wind size={16} color="#38bdf8" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{hasAc ? 'Central AC' : 'Standard'}</Text>
+                    <Text style={styles.amenitySub}>Climate Control</Text>
+                  </View>
+                </View>
+
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: '#1e293b' }]}>
+                    <Zap size={16} color="#fbbf24" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{hasDg.includes('100%') ? '100% DG' : 'Backup'}</Text>
+                    <Text style={styles.amenitySub}>Power DG Backup</Text>
+                  </View>
+                </View>
+
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: '#1e293b' }]}>
+                    <Bed size={16} color="#f43f5e" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{bridal} Rooms</Text>
+                    <Text style={styles.amenitySub}>Bridal / Green AC</Text>
+                  </View>
+                </View>
+
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: '#1e293b' }]}>
+                    <Bed size={16} color="#a78bfa" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{guestR} Rooms</Text>
+                    <Text style={styles.amenitySub}>Guest Stay Rooms</Text>
+                  </View>
+                </View>
+
+                <View style={styles.amenityCard}>
+                  <View style={[styles.amenityIconCircle, { backgroundColor: '#1e293b' }]}>
+                    <Music size={16} color="#f472b6" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.amenityVal}>{djCutoff}</Text>
+                    <Text style={styles.amenitySub}>Music Curfew</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Policies List */}
+              <View style={styles.policiesCard}>
+                <Text style={styles.policiesTitle}>VENUE POLICIES & PERMISSIONS</Text>
+                <View style={styles.policyRow}>
+                  <Utensils size={14} color="#64748b" />
+                  <Text style={styles.policyKey}>Catering:</Text>
+                  <Text style={styles.policyVal}>{catPol}</Text>
+                </View>
+                <View style={styles.policyRow}>
+                  <Music size={14} color="#64748b" />
+                  <Text style={styles.policyKey}>DJ & Sound:</Text>
+                  <Text style={styles.policyVal}>{djPol}</Text>
+                </View>
+                <View style={styles.policyRow}>
+                  <Sparkles size={14} color="#64748b" />
+                  <Text style={styles.policyKey}>Outside Decorators:</Text>
+                  <Text style={[styles.policyVal, { color: outDec ? '#4ade80' : '#f87171' }]}>
+                    {outDec ? 'Allowed with prior notice' : 'Venue Decorators Only'}
+                  </Text>
+                </View>
+                <View style={styles.policyRow}>
+                  <Clock size={14} color="#64748b" />
+                  <Text style={styles.policyKey}>Bar & Alcohol:</Text>
+                  <Text style={styles.policyVal}>{alcPol}</Text>
+                </View>
+                <View style={[styles.policyRow, { borderBottomWidth: 0 }]}>
+                  <ShieldCheck size={14} color="#64748b" />
+                  <Text style={styles.policyKey}>Security:</Text>
+                  <Text style={styles.policyVal}>{cctv ? '24/7 CCTV & Guards' : 'Standard Security'}</Text>
+                </View>
+              </View>
+            </View>
+          );
+        })()}
+
+        {/* Optional Add-on Services */}
+        {Boolean(service.addOnServices && service.addOnServices.length > 0) && (
+          <View style={styles.card}>
+            <Text style={styles.cardSectionTitle}>Optional Add-on Services</Text>
+            {service.addOnServices?.map((addon) => (
+              <View key={addon.id} style={styles.addonCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.addonName}>{addon.name}</Text>
+                  {addon.description ? <Text style={styles.addonDesc}>{addon.description}</Text> : null}
+                </View>
+                <Text style={styles.addonPrice}>+₹{addon.price.toLocaleString('en-IN')}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Fixed Packages */}
+        {Boolean(service.packages && service.packages.length > 0) && (
+          <View style={styles.card}>
+            <Text style={styles.cardSectionTitle}>In-House Event Packages</Text>
+            {service.packages?.map((pkg, idx) => (
+              <View key={idx} style={styles.addonCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.addonName}>{pkg.name}</Text>
+                  <Text style={styles.addonDesc}>Up to {pkg.guests} Guests{pkg.description ? ` • ${pkg.description}` : ''}</Text>
+                </View>
+                <Text style={styles.addonPrice}>₹{pkg.price.toLocaleString('en-IN')}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Amenities List */}
         <View style={styles.card}>
           <Text style={styles.cardSectionTitle}>Included Features & Amenities</Text>
@@ -276,10 +532,22 @@ export default function ServiceDetailsScreen() {
           </View>
         </View>
 
-        {/* Address */}
+        {/* Address & Google Maps Direction */}
         <View style={styles.card}>
           <Text style={styles.cardSectionTitle}>Venue / Business Address</Text>
           <Text style={styles.addressText}>{service.location || 'Location not specified'}</Text>
+          {Boolean(service.mapUrl || (service.latitude && service.longitude)) && (
+            <TouchableOpacity
+              style={styles.mapsBtn}
+              onPress={() => {
+                const url = service.mapUrl || (service.latitude && service.longitude ? `https://www.google.com/maps/search/?api=1&query=${service.latitude},${service.longitude}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.name + ' ' + (service.location || ''))}`);
+                Linking.openURL(url).catch(() => {});
+              }}
+            >
+              <Navigation size={14} color="#ffffff" />
+              <Text style={styles.mapsBtnText}>📍 Open in Google Maps</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Edit Button CTA */}
@@ -437,4 +705,155 @@ const styles = StyleSheet.create({
   },
   featureBadgeText: { fontSize: 12, fontWeight: '700', color: '#e2e8f0' },
   addressText: { fontSize: 13, color: '#94a3b8', lineHeight: 18 },
+  badgePill: {
+    backgroundColor: 'rgba(244, 63, 94, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgePillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#f43f5e',
+  },
+  celebPriceRowCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#121826',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  celebTitleText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  celebHallText: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  celebVegRateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4ade80',
+  },
+  celebNonVegRateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#f87171',
+  },
+  amenitiesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  amenityCard: {
+    width: (width - 66) / 2,
+    backgroundColor: '#121826',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    borderRadius: 12,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  amenityIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  amenityVal: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  amenitySub: {
+    fontSize: 10,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  policiesCard: {
+    backgroundColor: '#090d16',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  policiesTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  policyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#161f30',
+  },
+  policyKey: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+    minWidth: 110,
+  },
+  policyVal: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#e2e8f0',
+    flex: 1,
+  },
+  addonCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#121826',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  addonName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  addonDesc: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  addonPrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#38bdf8',
+  },
+  mapsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#1d4ed8',
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 12,
+  },
+  mapsBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
 });

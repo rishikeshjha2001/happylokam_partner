@@ -10,6 +10,7 @@ import {
   StatusBar,
   Dimensions,
   BackHandler,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -26,10 +27,17 @@ import {
   Star,
   Gift,
   ChevronRight,
+  Sparkles,
+  Calendar,
+  Users,
+  Utensils,
+  Phone,
+  MessageSquare,
+  CheckCircle2,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { PARTNER_API } from '../../constants/api';
-import PartnerDatabase, { PartnerSession, DashboardStats } from '../../services/partnerDatabase';
+import PartnerDatabase, { PartnerSession, DashboardStats, PartnerBooking } from '../../services/partnerDatabase';
 import ExitConfirmModal from '../../components/ExitConfirmModal';
 
 const { width } = Dimensions.get('window');
@@ -45,7 +53,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 export default function DashboardScreen() {
   const [session, setSession] = useState<PartnerSession | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [recentBookings, setRecentBookings] = useState<PartnerBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -71,22 +79,13 @@ export default function DashboardScreen() {
         return;
       }
 
-      // Initial empty stats
-      const defaultStats: DashboardStats = {
-        totalBookings: 0,
-        pendingBookings: 0,
-        completedBookings: 0,
-        cancelledBookings: 0,
-        totalServices: 0,
-        activeServices: 0,
-        totalRevenue: 0,
-        monthlyRevenue: 0,
-      };
+      // 1. Instant live stats directly from local database
+      const liveStats = await PartnerDatabase.getLiveDashboardStats();
+      const allBookings = await PartnerDatabase.getBookings();
+      setStats(liveStats);
+      setRecentBookings(allBookings.slice(0, 6));
 
-      setStats(defaultStats);
-      setRecentBookings([]);
-
-      // Fast network fetch if live
+      // Fast network fetch if live to sync server data
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 2500);
@@ -96,9 +95,16 @@ export default function DashboardScreen() {
         });
         clearTimeout(timer);
         const json = await res.json();
-        if (json.success) {
-          setStats(json.data.stats);
-          setRecentBookings(json.data.recentBookings || []);
+        if (json.success && json.data) {
+          if (json.data.stats && (json.data.stats.totalBookings > 0 || liveStats.totalBookings === 0)) {
+            setStats(json.data.stats);
+          }
+          if (Array.isArray(json.data.recentBookings) && json.data.recentBookings.length > 0) {
+            const combined = [...json.data.recentBookings, ...allBookings];
+            const dedupMap = new Map();
+            combined.forEach((b: any) => { if (b?.id) dedupMap.set(b.id, b); });
+            setRecentBookings(Array.from(dedupMap.values()).slice(0, 6));
+          }
           await PartnerDatabase.saveDashboard(json.data);
         }
       } catch (netErr) {
@@ -112,9 +118,11 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const statusConfig = STATUS_CONFIG[session?.status || 'PENDING'] || STATUS_CONFIG.PENDING;
   const StatusIcon = statusConfig.icon;
@@ -228,6 +236,124 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Next Upcoming Celebration Schedule Card */}
+        {(() => {
+          const upcomingBooking = recentBookings.find((b: any) => {
+            const status = (b.status || '').toUpperCase();
+            return status === 'CONFIRMED' || status === 'PENDING' || status === 'CHECKED_IN';
+          }) || (recentBookings.length > 0 ? recentBookings[0] : null);
+
+          if (!upcomingBooking) return null;
+
+          const totalPlates = upcomingBooking.platesCount || ((upcomingBooking.vegPlatesCount || 0) + (upcomingBooking.nonVegPlatesCount || 0));
+
+          return (
+            <View style={styles.upcomingCelebrationCard}>
+              <View style={styles.upcomingHeaderRow}>
+                <View style={styles.upcomingTagBadge}>
+                  <Sparkles size={11} color="#f43f5e" />
+                  <Text style={styles.upcomingTagBadgeText}>NEXT UPCOMING CELEBRATION</Text>
+                </View>
+                <View style={styles.upcomingDateBadge}>
+                  <Calendar size={12} color="#38bdf8" />
+                  <Text style={styles.upcomingDateBadgeText}>
+                    {upcomingBooking.bookingDate || upcomingBooking.date || 'Scheduled'}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => router.push({ pathname: '/booking-details', params: { id: upcomingBooking.id } })}
+              >
+                <Text style={styles.upcomingTitle} numberOfLines={1}>
+                  {upcomingBooking.serviceName || upcomingBooking.venue?.name || 'Celebration Event'}
+                </Text>
+                <Text style={styles.upcomingCustomer}>
+                  Customer: <Text style={{ color: '#ffffff', fontWeight: '800' }}>{upcomingBooking.customerName || upcomingBooking.user?.name || 'Celebration Guest'}</Text>
+                </Text>
+
+                {/* Badges Row: Celebration Theme & Attendance */}
+                <View style={styles.upcomingMetaRow}>
+                  <View style={styles.upcomingMetaPill}>
+                    <Text style={styles.upcomingMetaPillText}>
+                      🎉 {upcomingBooking.celebrationType?.replace(/_/g, ' ') || 'CELEBRATION'}
+                    </Text>
+                  </View>
+                  <View style={styles.upcomingMetaPill}>
+                    <Users size={12} color="#60a5fa" />
+                    <Text style={styles.upcomingMetaPillText}>
+                      {upcomingBooking.guestCount || 50} Guests
+                    </Text>
+                  </View>
+                  {Boolean(totalPlates) && (
+                    <View style={styles.upcomingMetaPill}>
+                      <Utensils size={12} color="#4ade80" />
+                      <Text style={styles.upcomingMetaPillText}>
+                        {totalPlates} Plates
+                      </Text>
+                    </View>
+                  )}
+                  <View style={[styles.upcomingMetaPill, { borderColor: '#38bdf8' }]}>
+                    <Text style={[styles.upcomingMetaPillText, { color: '#38bdf8' }]}>
+                      {upcomingBooking.bookingDays ? `${upcomingBooking.bookingDays} Day(s)` : 'Full Event'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Veg vs Non-Veg Plates Banner */}
+                {Boolean((upcomingBooking.vegPlatesCount && upcomingBooking.vegPlatesCount > 0) || (upcomingBooking.nonVegPlatesCount && upcomingBooking.nonVegPlatesCount > 0)) && (
+                  <View style={styles.upcomingPlatesSplitRow}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#4ade80' }}>
+                      🟢 {upcomingBooking.vegPlatesCount || 0} Veg Plates
+                    </Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#f87171' }}>
+                      🔴 {upcomingBooking.nonVegPlatesCount || 0} Non-Veg Plates
+                    </Text>
+                    <Text style={{ fontSize: 12, fontWeight: '900', color: '#38bdf8' }}>
+                      ₹{(upcomingBooking.totalAmount || upcomingBooking.baseAmount || 0).toLocaleString('en-IN')}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Quick Contact & Details CTA */}
+              <View style={styles.upcomingActionRow}>
+                <TouchableOpacity
+                  style={styles.upcomingCallBtn}
+                  onPress={() => {
+                    const phone = upcomingBooking.customerPhone || upcomingBooking.user?.phone;
+                    if (phone) Linking.openURL(`tel:${phone}`);
+                  }}
+                >
+                  <Phone size={13} color="#ffffff" />
+                  <Text style={styles.upcomingCallBtnText}>Call Customer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.upcomingWaBtn}
+                  onPress={() => {
+                    const rawPhone = upcomingBooking.customerPhone || upcomingBooking.user?.phone;
+                    const phone = rawPhone?.replace(/[^0-9]/g, '');
+                    if (phone) {
+                      const msg = encodeURIComponent(`Hello ${upcomingBooking.customerName || upcomingBooking.user?.name || 'Customer'}, regarding your upcoming event for ${upcomingBooking.serviceName || 'happylokam Service'} on ${upcomingBooking.bookingDate || upcomingBooking.date}...`);
+                      Linking.openURL(`https://wa.me/${phone}?text=${msg}`);
+                    }
+                  }}
+                >
+                  <MessageSquare size={13} color="#22c55e" />
+                  <Text style={styles.upcomingWaBtnText}>WhatsApp</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.upcomingDetailBtn}
+                  onPress={() => router.push({ pathname: '/booking-details', params: { id: upcomingBooking.id } })}
+                >
+                  <Text style={styles.upcomingDetailBtnText}>View Details →</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })()}
+
         {/* Quick Stats Grid */}
         <View style={styles.statsGrid}>
           <StatCard
@@ -322,45 +448,67 @@ export default function DashboardScreen() {
             <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 10 }}>No Recent Bookings</Text>
             <Text style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', marginTop: 4 }}>New customer reservations and bookings will appear here in real-time.</Text>
           </View>
-        ) : recentBookings.map((b: any) => (
-          <TouchableOpacity
-            key={b.id}
-            style={styles.bookingCard}
-            activeOpacity={0.85}
-            onPress={() => router.push({ pathname: '/booking-details', params: { id: b.id } })}
-          >
-            <View style={styles.bookingLeft}>
-              <Text style={styles.bookingCustomer}>{b.user?.name || 'Customer'}</Text>
-              <Text style={styles.bookingVenue}>{b.venue?.name || b.service?.name || 'Booked Service'}</Text>
-              <Text style={styles.bookingDate}>
-                {new Date(b.createdAt).toLocaleDateString('en-IN')}
-              </Text>
-            </View>
-            <View style={styles.bookingRight}>
-              <Text style={styles.bookingAmount}>₹{(b.totalAmount || 0).toLocaleString('en-IN')}</Text>
-              <View
-                style={[
-                  styles.bookingStatusPill,
-                  {
-                    backgroundColor:
-                      b.status === 'CONFIRMED'
-                        ? 'rgba(52,211,153,0.15)'
-                        : 'rgba(251,191,36,0.15)',
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.bookingStatusText,
-                    { color: b.status === 'CONFIRMED' ? '#34d399' : '#fbbf24' },
-                  ]}
-                >
-                  {b.status}
+        ) : recentBookings.map((b: any) => {
+          const totalPlates = b.platesCount || ((b.vegPlatesCount || 0) + (b.nonVegPlatesCount || 0));
+          return (
+            <TouchableOpacity
+              key={b.id}
+              style={styles.bookingCard}
+              activeOpacity={0.85}
+              onPress={() => router.push({ pathname: '/booking-details', params: { id: b.id } })}
+            >
+              <View style={styles.bookingLeft}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <Text style={styles.bookingCustomer}>{b.customerName || b.user?.name || 'Customer'}</Text>
+                  {b.celebrationType ? (
+                    <View style={styles.miniCelebPill}>
+                      <Text style={styles.miniCelebPillText}>
+                        {b.celebrationType.replace(/_/g, ' ')}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.bookingVenue}>{b.serviceName || b.venue?.name || 'Celebration Service'}</Text>
+                <Text style={styles.bookingDate}>
+                  📅 Event: {b.bookingDate || b.date || new Date(b.createdAt).toLocaleDateString('en-IN')}
+                  {totalPlates ? ` • ${totalPlates} Plates` : (b.guestCount ? ` • ${b.guestCount} Guests` : '')}
                 </Text>
               </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+              <View style={styles.bookingRight}>
+                <Text style={styles.bookingAmount}>₹{(b.totalAmount || b.baseAmount || 0).toLocaleString('en-IN')}</Text>
+                <View
+                  style={[
+                    styles.bookingStatusPill,
+                    {
+                      backgroundColor:
+                        b.status === 'CONFIRMED'
+                          ? 'rgba(52,211,153,0.15)'
+                          : b.status === 'COMPLETED'
+                          ? 'rgba(96,165,250,0.15)'
+                          : 'rgba(251,191,36,0.15)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.bookingStatusText,
+                      {
+                        color:
+                          b.status === 'CONFIRMED'
+                            ? '#34d399'
+                            : b.status === 'COMPLETED'
+                            ? '#60a5fa'
+                            : '#fbbf24',
+                      },
+                    ]}
+                  >
+                    {b.status || 'PENDING'}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -546,7 +694,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1c2333',
   },
-  bookingLeft: {},
+  bookingLeft: { flex: 1, paddingRight: 8 },
   bookingCustomer: { fontSize: 15, fontWeight: '700', color: '#e2e8f0' },
   bookingVenue: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
   bookingDate: { fontSize: 11, color: '#64748b', marginTop: 2 },
@@ -554,4 +702,159 @@ const styles = StyleSheet.create({
   bookingAmount: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
   bookingStatusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
   bookingStatusText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  upcomingCelebrationCard: {
+    backgroundColor: '#0c1527',
+    borderWidth: 1.5,
+    borderColor: '#1d4ed8',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#1d4ed8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  upcomingHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  upcomingTagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.3)',
+  },
+  upcomingTagBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#f43f5e',
+    letterSpacing: 0.5,
+  },
+  upcomingDateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  upcomingDateBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#38bdf8',
+  },
+  upcomingTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: 2,
+  },
+  upcomingCustomer: {
+    fontSize: 13,
+    color: '#94a3b8',
+    marginBottom: 8,
+  },
+  upcomingMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  upcomingMetaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#131e36',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  upcomingMetaPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#e2e8f0',
+  },
+  upcomingPlatesSplitRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#070b14',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  upcomingActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  upcomingCallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#2563eb',
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  upcomingCallBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  upcomingWaBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  upcomingWaBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#22c55e',
+  },
+  upcomingDetailBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    backgroundColor: '#1e293b',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upcomingDetailBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#38bdf8',
+  },
+  miniCelebPill: {
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  miniCelebPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#38bdf8',
+    textTransform: 'uppercase',
+  },
 });
