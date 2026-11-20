@@ -9,9 +9,11 @@ import {
   ActivityIndicator,
   StatusBar,
   BackHandler,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Location from 'expo-location';
 import {
   ArrowLeft,
   Tag,
@@ -26,6 +28,7 @@ import {
   Trash2,
   Package,
   Layers,
+  Navigation,
 } from 'lucide-react-native';
 import { PARTNER_API } from '../constants/api';
 import PartnerDatabase, { PartnerServiceItem, PartnerServicePackage, PartnerAddOnService } from '../services/partnerDatabase';
@@ -98,6 +101,9 @@ export default function AddServiceScreen() {
   const [location, setLocation] = useState('');
   const [features, setFeatures] = useState('');
   const [mapUrl, setMapUrl] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [detectingGps, setDetectingGps] = useState(false);
   const [baseHallPrice, setBaseHallPrice] = useState('');
   const [pricePerPlate, setPricePerPlate] = useState('');
   const [pricePerPlateVeg, setPricePerPlateVeg] = useState('');
@@ -214,6 +220,59 @@ export default function AddServiceScreen() {
     setPackages(packages.filter((_, i) => i !== index));
   };
 
+  const handleDetectGps = async () => {
+    try {
+      setDetectingGps(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setAlertConfig({
+          visible: true,
+          type: 'warning',
+          title: 'Permission Denied',
+          message: 'Please grant location permissions in device settings to detect venue GPS coordinates.',
+        });
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const lat = loc.coords.latitude;
+      const lon = loc.coords.longitude;
+      setLatitude(String(lat));
+      setLongitude(String(lon));
+      if (!mapUrl) {
+        setMapUrl(`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`);
+      }
+      try {
+        const [addr] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+        if (addr) {
+          const detectedLoc = [addr.name, addr.street, addr.district || addr.subregion].filter(Boolean).join(', ');
+          if (detectedLoc && !location) {
+            setLocation(detectedLoc);
+          }
+          if (addr.city && !city) {
+            setCity(addr.city);
+          }
+        }
+      } catch (revErr) {
+        // Reverse geocoding optional
+      }
+      setAlertConfig({
+        visible: true,
+        type: 'success',
+        title: '📍 GPS Location Detected',
+        message: `Venue coordinates verified: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Google Maps link created.`,
+      });
+    } catch (e: any) {
+      setAlertConfig({
+        visible: true,
+        type: 'error',
+        title: 'GPS Detection Failed',
+        message: e?.message || 'Unable to fetch current GPS coordinates. Please enter manually.',
+      });
+    } finally {
+      setDetectingGps(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       setAlertConfig({
@@ -282,7 +341,9 @@ export default function AddServiceScreen() {
         city: city.trim() || 'Hyderabad',
         availableCities: citiesList.length > 0 ? citiesList : [city.trim() || 'Hyderabad'],
         location: location.trim() || city.trim() || 'Hyderabad',
-        mapUrl: mapUrl.trim() || undefined,
+        mapUrl: mapUrl.trim() || (latitude && longitude ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}` : undefined),
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
         features: featureList,
         packages,
         supportedCelebrations,
@@ -681,6 +742,47 @@ export default function AddServiceScreen() {
           onChangeText={setLocation}
         />
 
+        {/* GPS Auto-Detect Button */}
+        <TouchableOpacity
+          style={styles.gpsDetectBtn}
+          onPress={handleDetectGps}
+          disabled={detectingGps}
+          activeOpacity={0.85}
+        >
+          <Navigation size={16} color="#ffffff" />
+          {detectingGps ? (
+            <ActivityIndicator size="small" color="#ffffff" style={{ marginLeft: 8 }} />
+          ) : (
+            <Text style={styles.gpsDetectBtnText}>📍 Auto-Detect Venue GPS Coordinates</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Explicit Lat / Long for Precision Navigation & Distance */}
+        <View style={styles.row}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={styles.label}>Latitude</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 25.6093"
+              placeholderTextColor="#64748b"
+              value={latitude}
+              onChangeText={setLatitude}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={{ flex: 1, marginLeft: 8 }}>
+            <Text style={styles.label}>Longitude</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 85.1235"
+              placeholderTextColor="#64748b"
+              value={longitude}
+              onChangeText={setLongitude}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+
         {/* Google Maps Directions Link */}
         <Text style={styles.label}>Google Maps Directions Link (Optional)</Text>
         <TextInput
@@ -691,7 +793,7 @@ export default function AddServiceScreen() {
           onChangeText={setMapUrl}
           autoCapitalize="none"
         />
-        <Text style={styles.hintText}>Enables customer "See Location on Google Maps" button</Text>
+        <Text style={styles.hintText}>Auto-filled when GPS is detected; powers user "Navigate on Google Maps" button</Text>
 
         {/* ==================================================== */}
         {/* CUSTOM PACKAGES LIST & CREATOR                      */}
@@ -1124,6 +1226,22 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   savePkgBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
+  gpsDetectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0284c7',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginVertical: 10,
+    gap: 8,
+  },
+  gpsDetectBtnText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   submitBtn: {
     backgroundColor: '#2563eb',
     borderRadius: 14,

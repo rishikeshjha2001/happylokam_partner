@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Location from 'expo-location';
 import {
   ArrowLeft,
   DollarSign,
@@ -25,6 +26,7 @@ import {
   CheckCircle2,
   Trash2,
   Sparkles,
+  Navigation,
 } from 'lucide-react-native';
 import PartnerDatabase, { PartnerServiceItem, PartnerAddOnService } from '../services/partnerDatabase';
 import { PARTNER_API } from '../constants/api';
@@ -94,6 +96,9 @@ export default function EditServiceScreen() {
   const [city, setCity] = useState('');
   const [location, setLocation] = useState('');
   const [mapUrl, setMapUrl] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [detectingGps, setDetectingGps] = useState(false);
   const [description, setDescription] = useState('');
   const [featureInput, setFeatureInput] = useState('');
   const [features, setFeatures] = useState<string[]>([]);
@@ -261,6 +266,8 @@ export default function EditServiceScreen() {
     setCity(item.city || '');
     setLocation(item.location || '');
     setMapUrl(item.mapUrl || '');
+    if (item.latitude) setLatitude(String(item.latitude));
+    if (item.longitude) setLongitude(String(item.longitude));
     setDescription(item.description || '');
     setFeatures(item.features || []);
     setIsActive(item.isActive !== false);
@@ -295,6 +302,59 @@ export default function EditServiceScreen() {
 
   const handleRemoveFeature = (feat: string) => {
     setFeatures(features.filter((f) => f !== feat));
+  };
+
+  const handleDetectGps = async () => {
+    try {
+      setDetectingGps(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setAlertConfig({
+          visible: true,
+          type: 'warning',
+          title: 'Permission Denied',
+          message: 'Please grant location permissions in device settings to detect venue GPS coordinates.',
+        });
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const lat = loc.coords.latitude;
+      const lon = loc.coords.longitude;
+      setLatitude(String(lat));
+      setLongitude(String(lon));
+      if (!mapUrl) {
+        setMapUrl(`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`);
+      }
+      try {
+        const [addr] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+        if (addr) {
+          const detectedLoc = [addr.name, addr.street, addr.district || addr.subregion].filter(Boolean).join(', ');
+          if (detectedLoc && !location) {
+            setLocation(detectedLoc);
+          }
+          if (addr.city && !city) {
+            setCity(addr.city);
+          }
+        }
+      } catch (revErr) {
+        // Reverse geocoding optional
+      }
+      setAlertConfig({
+        visible: true,
+        type: 'success',
+        title: '📍 GPS Location Detected',
+        message: `Venue coordinates verified: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Google Maps link created.`,
+      });
+    } catch (e: any) {
+      setAlertConfig({
+        visible: true,
+        type: 'error',
+        title: 'GPS Detection Failed',
+        message: e?.message || 'Unable to fetch current GPS coordinates. Please enter manually.',
+      });
+    } finally {
+      setDetectingGps(false);
+    }
   };
 
   const handleUpdate = async () => {
@@ -343,7 +403,9 @@ export default function EditServiceScreen() {
         capacity: capacity ? parseInt(capacity) : undefined,
         city: city.trim() || 'Hyderabad',
         location: location.trim() || city.trim() || 'Hyderabad',
-        mapUrl: mapUrl.trim() || undefined,
+        mapUrl: mapUrl.trim() || (latitude && longitude ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}` : undefined),
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
         features,
         isActive,
         supportedCelebrations,
@@ -714,6 +776,59 @@ export default function EditServiceScreen() {
                 placeholderTextColor="#64748b"
               />
             </View>
+
+            {/* GPS Auto-Detect Button */}
+            <TouchableOpacity
+              style={styles.gpsDetectBtn}
+              onPress={handleDetectGps}
+              disabled={detectingGps}
+              activeOpacity={0.85}
+            >
+              <Navigation size={16} color="#ffffff" />
+              {detectingGps ? (
+                <ActivityIndicator size="small" color="#ffffff" style={{ marginLeft: 8 }} />
+              ) : (
+                <Text style={styles.gpsDetectBtnText}>📍 Auto-Detect Venue GPS Coordinates</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Explicit Lat / Long for Precision Navigation & Distance */}
+            <View style={{ flexDirection: 'row', marginTop: 10 }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={styles.inputLabel}>Latitude</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g. 25.6093"
+                  placeholderTextColor="#64748b"
+                  value={latitude}
+                  onChangeText={setLatitude}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 8 }}>
+                <Text style={styles.inputLabel}>Longitude</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g. 85.1235"
+                  placeholderTextColor="#64748b"
+                  value={longitude}
+                  onChangeText={setLongitude}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            {/* Google Maps Directions Link */}
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Google Maps Link (Optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g. https://maps.app.goo.gl/... or https://google.com/maps?q=..."
+              placeholderTextColor="#64748b"
+              value={mapUrl}
+              onChangeText={setMapUrl}
+              autoCapitalize="none"
+            />
+            <Text style={styles.hintText}>Auto-filled when GPS is detected; powers user "Navigate on Google Maps" button</Text>
           </View>
 
           {/* Description */}
@@ -1152,6 +1267,28 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   featureBadgeText: { fontSize: 12, color: '#e2e8f0' },
+  gpsDetectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0284c7',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 4,
+    gap: 8,
+  },
+  gpsDetectBtnText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  hintText: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 4,
+  },
   saveBtn: {
     backgroundColor: '#2563eb',
     borderRadius: 12,

@@ -71,6 +71,8 @@ export interface PartnerServiceItem {
   features: string[];
   location: string;
   mapUrl?: string;
+  latitude?: number;
+  longitude?: number;
   city: string;
   availability: string;
   status: string;
