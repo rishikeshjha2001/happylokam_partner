@@ -42,6 +42,36 @@ export interface PartnerAddOnService {
   description?: string;
 }
 
+export interface VenueAmenitiesPolicy {
+  parkingType?: string; // 'Valet & Dedicated Parking' | 'Dedicated Parking Lot' | 'Street Parking' | 'No Parking'
+  parkingCapacityCars?: number;
+  parkingCapacityBikes?: number;
+  valetAvailable?: boolean;
+  centralAc?: boolean;
+  powerBackup?: string; // '100% DG Generator Backup' | 'Standard Inverter' | 'None'
+  bridalRoomsCount?: number;
+  guestRoomsCount?: number;
+  cateringPolicy?: string; // 'In-house Catering Only' | 'In-house & Outside Catering' | 'Outside Catering Allowed'
+  foodType?: string; // 'Pure Veg' | 'Veg & Non-Veg' | 'Jain Food Available'
+  djPolicy?: string; // 'In-house DJ Permitted' | 'Outside DJ Allowed' | 'No Loud Music'
+  djCutoffTime?: string; // e.g. '11:00 PM'
+  alcoholPolicy?: string; // 'Allowed (with 1-Day Permit)' | 'Not Allowed'
+  outsideDecoratorAllowed?: boolean;
+  stageLightingIncluded?: boolean;
+  firecrackersAllowed?: boolean;
+  cctvSecurity?: boolean;
+}
+
+export interface CelebrationPriceOverride {
+  baseHallPrice?: number;
+  pricePerPlateVeg?: number;
+  pricePerPlateNonVeg?: number;
+}
+
+export interface CelebrationPricingMap {
+  [celebrationId: string]: CelebrationPriceOverride;
+}
+
 export interface PartnerServiceItem {
   id: string;
   name: string;
@@ -81,6 +111,8 @@ export interface PartnerServiceItem {
   totalBookings: number;
   isActive: boolean;
   supportedCelebrations?: string[];
+  celebrationPricing?: CelebrationPricingMap;
+  amenitiesPolicy?: VenueAmenitiesPolicy;
   addOnServices?: PartnerAddOnService[];
   createdAt: string;
 }

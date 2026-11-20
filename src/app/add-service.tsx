@@ -29,6 +29,16 @@ import {
   Package,
   Layers,
   Navigation,
+  Car,
+  Music,
+  Utensils,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  Wind,
+  Zap,
+  Wine,
+  Bed,
 } from 'lucide-react-native';
 import { PARTNER_API } from '../constants/api';
 import PartnerDatabase, { PartnerServiceItem, PartnerServicePackage, PartnerAddOnService } from '../services/partnerDatabase';
@@ -118,6 +128,30 @@ export default function AddServiceScreen() {
     'BIRTHDAY',
     'OFFICE_EVENTS',
   ]);
+
+  // Venue Amenities & Policies (User Prospective)
+  const [parkingCars, setParkingCars] = useState('100');
+  const [parkingBikes, setParkingBikes] = useState('200');
+  const [valetAvailable, setValetAvailable] = useState(true);
+  const [centralAc, setCentralAc] = useState(true);
+  const [powerBackup, setPowerBackup] = useState('100% DG Generator Backup');
+  const [bridalRooms, setBridalRooms] = useState('2');
+  const [guestRooms, setGuestRooms] = useState('4');
+  const [cateringPolicy, setCateringPolicy] = useState('In-house Catering Available');
+  const [djPolicy, setDjPolicy] = useState('In-house DJ Permitted');
+  const [djCutoffTime, setDjCutoffTime] = useState('11:00 PM');
+  const [alcoholPolicy, setAlcoholPolicy] = useState('Allowed (with 1-Day Permit)');
+  const [outsideDecoratorAllowed, setOutsideDecoratorAllowed] = useState(true);
+  const [cctvSecurity, setCctvSecurity] = useState(true);
+
+  // Celebration-Specific Pricing Overrides
+  const [celebrationPricing, setCelebrationPricing] = useState<Record<string, { baseHallPrice?: string; pricePerPlateVeg?: string; pricePerPlateNonVeg?: string }>>({
+    WEDDING: { baseHallPrice: '75000', pricePerPlateVeg: '850', pricePerPlateNonVeg: '1100' },
+    BIRTHDAY: { baseHallPrice: '25000', pricePerPlateVeg: '550', pricePerPlateNonVeg: '750' },
+    OFFICE_EVENTS: { baseHallPrice: '35000', pricePerPlateVeg: '650', pricePerPlateNonVeg: '850' },
+  });
+  const [showCelebPricingMatrix, setShowCelebPricingMatrix] = useState(false);
+
   const [addOnServices, setAddOnServices] = useState<PartnerAddOnService[]>([
     { id: 'addon_1', name: 'DJ & High-Bass Sound Setup', price: 12000, description: 'Dual JBL subs + wireless mics' },
     { id: 'addon_2', name: 'Royal Stage & Floral Entrance Decor', price: 25000, description: 'Fresh flowers and warm amber lighting' },
@@ -319,6 +353,32 @@ export default function AddServiceScreen() {
         .map((c) => c.trim())
         .filter(Boolean);
 
+      const parsedCelebPricing: Record<string, { baseHallPrice?: number; pricePerPlateVeg?: number; pricePerPlateNonVeg?: number }> = {};
+      Object.entries(celebrationPricing).forEach(([k, v]) => {
+        parsedCelebPricing[k] = {
+          baseHallPrice: v.baseHallPrice ? parseFloat(v.baseHallPrice) : undefined,
+          pricePerPlateVeg: v.pricePerPlateVeg ? parseFloat(v.pricePerPlateVeg) : undefined,
+          pricePerPlateNonVeg: v.pricePerPlateNonVeg ? parseFloat(v.pricePerPlateNonVeg) : undefined,
+        };
+      });
+
+      const amenitiesPolicy = {
+        parkingType: valetAvailable ? 'Valet & Dedicated Parking' : 'Dedicated Parking Lot',
+        parkingCapacityCars: parseInt(parkingCars) || 100,
+        parkingCapacityBikes: parseInt(parkingBikes) || 200,
+        valetAvailable,
+        centralAc,
+        powerBackup,
+        bridalRoomsCount: parseInt(bridalRooms) || 2,
+        guestRoomsCount: parseInt(guestRooms) || 4,
+        cateringPolicy,
+        djPolicy,
+        djCutoffTime,
+        alcoholPolicy,
+        outsideDecoratorAllowed,
+        cctvSecurity,
+      };
+
       const payload = {
         name: name.trim(),
         category: category.toUpperCase().replace(/\s+/g, '_'),
@@ -347,6 +407,8 @@ export default function AddServiceScreen() {
         features: featureList,
         packages,
         supportedCelebrations,
+        celebrationPricing: parsedCelebPricing,
+        amenitiesPolicy,
         addOnServices,
       };
 
@@ -400,6 +462,8 @@ export default function AddServiceScreen() {
               totalBookings: b.totalBookings || 0,
               isActive: b.isActive ?? true,
               supportedCelebrations: b.supportedCelebrations || payload.supportedCelebrations,
+              celebrationPricing: b.celebrationPricing || payload.celebrationPricing,
+              amenitiesPolicy: b.amenitiesPolicy || payload.amenitiesPolicy,
               addOnServices: b.addOnServices || payload.addOnServices,
               createdAt: b.createdAt || new Date().toISOString(),
             };
@@ -441,6 +505,8 @@ export default function AddServiceScreen() {
           totalBookings: 0,
           isActive: true,
           supportedCelebrations: payload.supportedCelebrations,
+          celebrationPricing: payload.celebrationPricing,
+          amenitiesPolicy: payload.amenitiesPolicy,
           addOnServices: payload.addOnServices,
           createdAt: new Date().toISOString(),
         };
@@ -551,6 +617,84 @@ export default function AddServiceScreen() {
             );
           })}
         </View>
+
+        {/* Celebration Custom Pricing Accordion */}
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => setShowCelebPricingMatrix(!showCelebPricingMatrix)}
+          activeOpacity={0.8}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Sparkles size={16} color="#38bdf8" />
+            <Text style={styles.accordionTitle}>Celebration Custom Rates (Optional)</Text>
+          </View>
+          {showCelebPricingMatrix ? <ChevronUp size={18} color="#38bdf8" /> : <ChevronDown size={18} color="#94a3b8" />}
+        </TouchableOpacity>
+
+        {showCelebPricingMatrix && (
+          <View style={styles.accordionBody}>
+            <Text style={styles.hintText}>Set custom hall & per-plate prices for specific events (Weddings, Birthdays, etc.)</Text>
+            {supportedCelebrations.map((celebId) => {
+              const celebInfo = CELEBRATION_TYPES.find((c) => c.id === celebId);
+              const pricingForCeleb = celebrationPricing[celebId] || {};
+              return (
+                <View key={celebId} style={styles.celebPriceRowCard}>
+                  <Text style={styles.celebPriceCardHeader}>{celebInfo?.label || celebId}</Text>
+                  <View style={styles.row}>
+                    <View style={{ flex: 1, marginRight: 6 }}>
+                      <Text style={styles.microLabel}>Hall Base (₹)</Text>
+                      <TextInput
+                        style={styles.microInput}
+                        placeholder="e.g. 75000"
+                        placeholderTextColor="#64748b"
+                        keyboardType="numeric"
+                        value={pricingForCeleb.baseHallPrice || ''}
+                        onChangeText={(val) =>
+                          setCelebrationPricing((prev) => ({
+                            ...prev,
+                            [celebId]: { ...prev[celebId], baseHallPrice: val },
+                          }))
+                        }
+                      />
+                    </View>
+                    <View style={{ flex: 1, marginHorizontal: 3 }}>
+                      <Text style={styles.microLabel}>Veg Plate (₹)</Text>
+                      <TextInput
+                        style={styles.microInput}
+                        placeholder="e.g. 850"
+                        placeholderTextColor="#64748b"
+                        keyboardType="numeric"
+                        value={pricingForCeleb.pricePerPlateVeg || ''}
+                        onChangeText={(val) =>
+                          setCelebrationPricing((prev) => ({
+                            ...prev,
+                            [celebId]: { ...prev[celebId], pricePerPlateVeg: val },
+                          }))
+                        }
+                      />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 6 }}>
+                      <Text style={styles.microLabel}>Non-Veg (₹)</Text>
+                      <TextInput
+                        style={styles.microInput}
+                        placeholder="e.g. 1100"
+                        placeholderTextColor="#64748b"
+                        keyboardType="numeric"
+                        value={pricingForCeleb.pricePerPlateNonVeg || ''}
+                        onChangeText={(val) =>
+                          setCelebrationPricing((prev) => ({
+                            ...prev,
+                            [celebId]: { ...prev[celebId], pricePerPlateNonVeg: val },
+                          }))
+                        }
+                      />
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* ==================================================== */}
         {/* PRICING MODEL SELECTION (Per-Person vs Fixed vs Manual) */}
@@ -794,6 +938,134 @@ export default function AddServiceScreen() {
           autoCapitalize="none"
         />
         <Text style={styles.hintText}>Auto-filled when GPS is detected; powers user "Navigate on Google Maps" button</Text>
+
+        {/* ==================================================== */}
+        {/* VENUE AMENITIES & POLICIES (USER PROSPECTIVE)       */}
+        {/* ==================================================== */}
+        <Text style={[styles.sectionHeader, { marginTop: 22 }]}>Venue Amenities & Parking (User Perspective)</Text>
+        <Text style={styles.sectionSub}>Everything celebration hosts need to know before booking</Text>
+
+        <View style={styles.amenitiesCardBox}>
+          {/* Parking & Valet */}
+          <View style={styles.amenityRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.amenityTitle}>🚗 Parking Capacity</Text>
+              <Text style={styles.amenitySub}>Cars and two-wheelers accommodated</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <TextInput
+                style={styles.smallNumberInput}
+                placeholder="Cars (100)"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={parkingCars}
+                onChangeText={setParkingCars}
+              />
+              <TextInput
+                style={styles.smallNumberInput}
+                placeholder="Bikes (200)"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={parkingBikes}
+                onChangeText={setParkingBikes}
+              />
+            </View>
+          </View>
+
+          {/* Quick Toggle Chips */}
+          <Text style={[styles.label, { marginTop: 12 }]}>Key Conveniences</Text>
+          <View style={styles.toggleChipsWrap}>
+            <TouchableOpacity
+              style={[styles.toggleChip, valetAvailable && styles.toggleChipActive]}
+              onPress={() => setValetAvailable(!valetAvailable)}
+            >
+              <Car size={13} color={valetAvailable ? '#38bdf8' : '#94a3b8'} />
+              <Text style={[styles.toggleChipText, valetAvailable && styles.toggleChipTextActive]}>
+                Valet Parking {valetAvailable ? '✓' : ''}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.toggleChip, centralAc && styles.toggleChipActive]}
+              onPress={() => setCentralAc(!centralAc)}
+            >
+              <Wind size={13} color={centralAc ? '#38bdf8' : '#94a3b8'} />
+              <Text style={[styles.toggleChipText, centralAc && styles.toggleChipTextActive]}>
+                Central AC Hall {centralAc ? '✓' : ''}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.toggleChip, cctvSecurity && styles.toggleChipActive]}
+              onPress={() => setCctvSecurity(!cctvSecurity)}
+            >
+              <ShieldCheck size={13} color={cctvSecurity ? '#38bdf8' : '#94a3b8'} />
+              <Text style={[styles.toggleChipText, cctvSecurity && styles.toggleChipTextActive]}>
+                CCTV Security {cctvSecurity ? '✓' : ''}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.toggleChip, outsideDecoratorAllowed && styles.toggleChipActive]}
+              onPress={() => setOutsideDecoratorAllowed(!outsideDecoratorAllowed)}
+            >
+              <Sparkles size={13} color={outsideDecoratorAllowed ? '#38bdf8' : '#94a3b8'} />
+              <Text style={[styles.toggleChipText, outsideDecoratorAllowed && styles.toggleChipTextActive]}>
+                Outside Decorator {outsideDecoratorAllowed ? '✓' : ''}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bridal & Guest Rooms */}
+          <View style={[styles.row, { marginTop: 12 }]}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <Text style={styles.label}>Bridal Rooms</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 2"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={bridalRooms}
+                onChangeText={setBridalRooms}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 6 }}>
+              <Text style={styles.label}>Guest Stay Rooms</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 4"
+                placeholderTextColor="#64748b"
+                keyboardType="numeric"
+                value={guestRooms}
+                onChangeText={setGuestRooms}
+              />
+            </View>
+          </View>
+
+          {/* Music & DJ Cutoff */}
+          <View style={[styles.row, { marginTop: 10 }]}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <Text style={styles.label}>DJ Music Cutoff Time</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 11:00 PM"
+                placeholderTextColor="#64748b"
+                value={djCutoffTime}
+                onChangeText={setDjCutoffTime}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 6 }}>
+              <Text style={styles.label}>Power Generator Backup</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 100% DG Backup"
+                placeholderTextColor="#64748b"
+                value={powerBackup}
+                onChangeText={setPowerBackup}
+              />
+            </View>
+          </View>
+        </View>
 
         {/* ==================================================== */}
         {/* CUSTOM PACKAGES LIST & CREATOR                      */}
@@ -1242,6 +1514,93 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
+  accordionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#0c1424',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1e3a8a',
+    marginVertical: 10,
+  },
+  accordionTitle: { fontSize: 13, fontWeight: '700', color: '#93c5fd' },
+  accordionBody: {
+    backgroundColor: '#0a101d',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    marginBottom: 14,
+    gap: 12,
+  },
+  celebPriceRowCard: {
+    backgroundColor: '#0d1527',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  celebPriceCardHeader: { fontSize: 12, fontWeight: '800', color: '#38bdf8', marginBottom: 8 },
+  microLabel: { fontSize: 10, color: '#94a3b8', fontWeight: '700', marginBottom: 4 },
+  microInput: {
+    backgroundColor: '#060a12',
+    borderWidth: 1,
+    borderColor: '#1c2438',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  amenitiesCardBox: {
+    backgroundColor: '#0b1322',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    marginTop: 8,
+  },
+  amenityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#162033',
+  },
+  amenityTitle: { fontSize: 13, fontWeight: '700', color: '#f1f5f9' },
+  amenitySub: { fontSize: 11, color: '#64748b', marginTop: 2 },
+  smallNumberInput: {
+    backgroundColor: '#060a12',
+    borderWidth: 1,
+    borderColor: '#1c2438',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#38bdf8',
+    fontSize: 12,
+    fontWeight: '700',
+    width: 90,
+    textAlign: 'center',
+  },
+  toggleChipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  toggleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#070d18',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  toggleChipActive: { backgroundColor: '#0c2242', borderColor: '#38bdf8' },
+  toggleChipText: { fontSize: 11, fontWeight: '600', color: '#94a3b8' },
+  toggleChipTextActive: { color: '#38bdf8', fontWeight: '700' },
   submitBtn: {
     backgroundColor: '#2563eb',
     borderRadius: 14,
