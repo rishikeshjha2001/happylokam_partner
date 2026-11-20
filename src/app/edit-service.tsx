@@ -26,9 +26,20 @@ import {
   Trash2,
   Sparkles,
 } from 'lucide-react-native';
-import PartnerDatabase, { PartnerServiceItem } from '../services/partnerDatabase';
+import PartnerDatabase, { PartnerServiceItem, PartnerAddOnService } from '../services/partnerDatabase';
 import { PARTNER_API } from '../constants/api';
 import CustomAlert from '../components/CustomAlert';
+
+export const CELEBRATION_TYPES = [
+  { id: 'WEDDING', label: '💍 Wedding & Engagement', icon: '💍' },
+  { id: 'BIRTHDAY', label: '🎂 Birthday & Milestone Party', icon: '🎂' },
+  { id: 'OFFICE_EVENTS', label: '🏢 Corporate & Office Events', icon: '🏢' },
+  { id: 'ANNIVERSARY', label: '🥂 Anniversary & Romance', icon: '🥂' },
+  { id: 'COCKTAIL_PARTY', label: '🎶 Cocktail & Social Night', icon: '🎶' },
+  { id: 'FESTIVE', label: '🌸 Festive & Religious Puja', icon: '🌸' },
+  { id: 'REUNION', label: '🎓 Farewell & Reunion', icon: '🎓' },
+  { id: 'BABY_SHOWER', label: '👶 Baby Shower & Naming', icon: '👶' },
+];
 
 const CATEGORIES = [
   'VENUES',
@@ -108,6 +119,21 @@ export default function EditServiceScreen() {
   const [blackoutDatesInput, setBlackoutDatesInput] = useState('');
   const [autoAccept, setAutoAccept] = useState(true);
 
+  // Supported Celebrations & Add-on Services
+  const [supportedCelebrations, setSupportedCelebrations] = useState<string[]>([
+    'WEDDING',
+    'BIRTHDAY',
+    'OFFICE_EVENTS',
+  ]);
+  const [addOnServices, setAddOnServices] = useState<PartnerAddOnService[]>([
+    { id: 'addon_1', name: 'DJ & High-Bass Sound Setup', price: 12000, description: 'Dual JBL subs + wireless mics' },
+    { id: 'addon_2', name: 'Royal Stage & Floral Entrance Decor', price: 25000, description: 'Fresh flowers and warm amber lighting' },
+  ]);
+  const [addonName, setAddonName] = useState('');
+  const [addonPrice, setAddonPrice] = useState('');
+  const [addonDesc, setAddonDesc] = useState('');
+  const [showAddonForm, setShowAddonForm] = useState(false);
+
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     type?: 'success' | 'error' | 'warning' | 'info' | 'exit';
@@ -120,6 +146,50 @@ export default function EditServiceScreen() {
     title: '',
     message: '',
   });
+
+  const handleToggleCelebration = (celebId: string) => {
+    if (supportedCelebrations.includes(celebId)) {
+      if (supportedCelebrations.length === 1) {
+        setAlertConfig({
+          visible: true,
+          type: 'warning',
+          title: 'Minimum Celebration Required',
+          message: 'Please keep at least one supported celebration type selected.',
+        });
+        return;
+      }
+      setSupportedCelebrations(supportedCelebrations.filter((c) => c !== celebId));
+    } else {
+      setSupportedCelebrations([...supportedCelebrations, celebId]);
+    }
+  };
+
+  const handleAddAddon = () => {
+    if (!addonName.trim() || !addonPrice.trim()) {
+      setAlertConfig({
+        visible: true,
+        type: 'warning',
+        title: 'Add-on Details Needed',
+        message: 'Please provide both a name and price for the add-on service.',
+      });
+      return;
+    }
+    const newAddon: PartnerAddOnService = {
+      id: `add_${Date.now()}`,
+      name: addonName.trim(),
+      price: parseFloat(addonPrice) || 5000,
+      description: addonDesc.trim() || undefined,
+    };
+    setAddOnServices([...addOnServices, newAddon]);
+    setAddonName('');
+    setAddonPrice('');
+    setAddonDesc('');
+    setShowAddonForm(false);
+  };
+
+  const handleRemoveAddon = (addonId: string) => {
+    setAddOnServices(addOnServices.filter((a) => a.id !== addonId));
+  };
 
   useEffect(() => {
     (async () => {
@@ -207,6 +277,12 @@ export default function EditServiceScreen() {
     if (item.pricePerGuest) setPricePerGuest(String(item.pricePerGuest));
     if (item.blackoutDates) setBlackoutDatesInput(item.blackoutDates.join(', '));
     if (item.autoAccept !== undefined) setAutoAccept(Boolean(item.autoAccept));
+    if (item.supportedCelebrations && item.supportedCelebrations.length > 0) {
+      setSupportedCelebrations(item.supportedCelebrations);
+    }
+    if (item.addOnServices && item.addOnServices.length > 0) {
+      setAddOnServices(item.addOnServices);
+    }
   };
 
   const handleAddFeature = () => {
@@ -270,12 +346,16 @@ export default function EditServiceScreen() {
         mapUrl: mapUrl.trim() || undefined,
         features,
         isActive,
+        supportedCelebrations,
+        addOnServices,
       };
 
       let updatedData = {
         ...(service || {}),
         id: id!,
         ...payload,
+        supportedCelebrations,
+        addOnServices,
         status: service?.status === 'APPROVED' ? 'APPROVED' : (service?.status || 'PENDING'),
         rating: service?.rating || 5.0,
         totalBookings: service?.totalBookings || 0,
@@ -467,6 +547,32 @@ export default function EditServiceScreen() {
             />
           </View>
 
+          {/* Supported Celebration Types */}
+          <View style={styles.card}>
+            <Text style={styles.inputLabel}>Supported Celebration Types *</Text>
+            <Text style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
+              Select all events and celebrations your banquet/venue hosts
+            </Text>
+            <View style={styles.celebrationGrid}>
+              {CELEBRATION_TYPES.map((celeb) => {
+                const isSelected = supportedCelebrations.includes(celeb.id);
+                return (
+                  <TouchableOpacity
+                    key={celeb.id}
+                    style={[styles.celebChip, isSelected && styles.celebChipSelected]}
+                    onPress={() => handleToggleCelebration(celeb.id)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.celebChipText, isSelected && styles.celebChipTextSelected]}>
+                      {celeb.label}
+                    </Text>
+                    {isSelected && <CheckCircle2 size={14} color="#38bdf8" style={{ marginLeft: 6 }} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Pricing & Unit */}
           <View style={styles.card}>
             <Text style={styles.inputLabel}>Pricing Amount (₹) *</Text>
@@ -653,6 +759,120 @@ export default function EditServiceScreen() {
                 </View>
               ))}
             </View>
+          </View>
+
+          {/* Custom Add-on Services */}
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <Text style={styles.inputLabel}>Custom Add-on Services</Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: '#0b192e',
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: '#38bdf8',
+                }}
+                onPress={() => setShowAddonForm(!showAddonForm)}
+                activeOpacity={0.8}
+              >
+                <Plus size={13} color="#38bdf8" />
+                <Text style={{ color: '#38bdf8', fontSize: 11, fontWeight: '700' }}>
+                  {showAddonForm ? 'Close' : 'Add Add-on'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
+              Offer optional extras (DJ setup, floral stage, drone video, AV projector)
+            </Text>
+
+            {addOnServices.map((addon) => (
+              <View
+                key={addon.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: '#0d1117',
+                  borderRadius: 12,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: '#1e293b',
+                  marginBottom: 8,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Sparkles size={14} color="#38bdf8" />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#f1f5f9' }}>{addon.name}</Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: '#38bdf8', fontWeight: '600', marginTop: 2 }}>
+                    💰 +₹{addon.price.toLocaleString('en-IN')}
+                  </Text>
+                  {addon.description ? (
+                    <Text style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{addon.description}</Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity onPress={() => handleRemoveAddon(addon.id)} style={{ padding: 6 }}>
+                  <Trash2 size={16} color="#f43f5e" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            {showAddonForm && (
+              <View
+                style={{
+                  backgroundColor: '#0b1526',
+                  borderRadius: 14,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: '#1e3a8a',
+                  marginTop: 6,
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#93c5fd', marginBottom: 8 }}>
+                  New Add-on Service
+                </Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Add-on Name (e.g. 4K Drone Photography & Video)"
+                  placeholderTextColor="#64748b"
+                  value={addonName}
+                  onChangeText={setAddonName}
+                />
+                <TextInput
+                  style={[styles.textInput, { marginTop: 8 }]}
+                  placeholder="Price (₹) (e.g. 15000)"
+                  placeholderTextColor="#64748b"
+                  keyboardType="numeric"
+                  value={addonPrice}
+                  onChangeText={setAddonPrice}
+                />
+                <TextInput
+                  style={[styles.textInput, { marginTop: 8 }]}
+                  placeholder="Description (Optional)"
+                  placeholderTextColor="#64748b"
+                  value={addonDesc}
+                  onChangeText={setAddonDesc}
+                />
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#2563eb',
+                    borderRadius: 10,
+                    paddingVertical: 10,
+                    alignItems: 'center',
+                    marginTop: 10,
+                  }}
+                  onPress={handleAddAddon}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>Save Add-on Service ✨</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Booking Rules & Availability Engine */}
@@ -856,6 +1076,23 @@ const styles = StyleSheet.create({
   },
   catChipText: { fontSize: 12, color: '#94a3b8', fontWeight: '600' },
   catChipTextActive: { color: '#ffffff', fontWeight: '700' },
+  celebrationGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  celebChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0d1117',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  celebChipSelected: {
+    backgroundColor: '#0b192e',
+    borderColor: '#38bdf8',
+  },
+  celebChipText: { fontSize: 12, fontWeight: '600', color: '#94a3b8' },
+  celebChipTextSelected: { color: '#38bdf8', fontWeight: '700' },
   priceRow: {
     position: 'relative',
     justifyContent: 'center',

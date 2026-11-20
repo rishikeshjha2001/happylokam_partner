@@ -35,6 +35,13 @@ export interface PartnerServicePackage {
   description?: string;
 }
 
+export interface PartnerAddOnService {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+}
+
 export interface PartnerServiceItem {
   id: string;
   name: string;
@@ -71,6 +78,8 @@ export interface PartnerServiceItem {
   rating: number;
   totalBookings: number;
   isActive: boolean;
+  supportedCelebrations?: string[];
+  addOnServices?: PartnerAddOnService[];
   createdAt: string;
 }
 
@@ -84,6 +93,8 @@ export interface PartnerBooking {
   venueId?: string;
   venue?: { name: string };
   serviceName?: string;
+  celebrationType?: string;
+  selectedAddOns?: { name: string; price: number }[];
   date: string;
   bookingDate?: string;
   bookingTime?: string;
