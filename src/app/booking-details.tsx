@@ -618,6 +618,50 @@ export default function BookingDetailsScreen() {
           </View>
         </View>
 
+        {/* Selected Add-On Services Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeaderTitle}>Extra Services Requested by Customer</Text>
+          {(booking as any).selectedAddOns && Array.isArray((booking as any).selectedAddOns) && (booking as any).selectedAddOns.length > 0 ? (
+            <View style={{ gap: 8 }}>
+              {(booking as any).selectedAddOns.map((addon: any, idx: number) => (
+                <View
+                  key={idx}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: '#070d18',
+                    padding: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: '#1e293b',
+                  }}
+                >
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+                      ✨ {addon.name}
+                    </Text>
+                    {addon.description && (
+                      <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                        {addon.description}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#38bdf8', fontFamily: 'monospace' }}>
+                    ₹{(addon.price || 0).toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={{ padding: 12, backgroundColor: '#070d18', borderRadius: 10, borderWidth: 1, borderColor: '#1e293b' }}>
+              <Text style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
+                Standard celebration setup. No extra paid add-ons selected by the customer.
+              </Text>
+            </View>
+          )}
+        </View>
+
         {/* Financial Breakdown */}
         <View style={styles.card}>
           <Text style={styles.cardHeaderTitle}>Payment & Price Summary</Text>

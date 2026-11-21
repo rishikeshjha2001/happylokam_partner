@@ -10,6 +10,7 @@ import {
   StatusBar,
   BackHandler,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -39,10 +40,24 @@ import {
   Zap,
   Wine,
   Bed,
+  Camera,
+  Image as ImageIcon,
+  X,
 } from 'lucide-react-native';
 import { PARTNER_API } from '../constants/api';
 import PartnerDatabase, { PartnerServiceItem, PartnerServicePackage, PartnerAddOnService } from '../services/partnerDatabase';
 import CustomAlert from '../components/CustomAlert';
+
+export const PHOTO_PRESETS = [
+  { label: '🏰 Grand AC Banquet', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80' },
+  { label: '🌿 Open Lawn Resort', url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80' },
+  { label: '🍽️ Royal Catering Buffet', url: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80' },
+  { label: '🎶 Stage & DJ Lighting', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80' },
+  { label: '🌸 Floral Mandap & Decor', url: 'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=800&q=80' },
+  { label: '📸 4K Photography Shoot', url: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=800&q=80' },
+  { label: '🏊 Poolside Villa Deck', url: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80' },
+  { label: '🍸 Rooftop Sky Lounge', url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80' },
+];
 
 export const CELEBRATION_TYPES = [
   { id: 'BACHELOR_PARTY', label: '🕺 Bachelor / Bachelorette Party', icon: '🕺' },
@@ -128,6 +143,13 @@ export default function AddServiceScreen() {
   const [blackoutDatesInput, setBlackoutDatesInput] = useState('');
   const [autoAccept, setAutoAccept] = useState(true);
 
+  // Photos & Media Gallery Manager
+  const [images, setImages] = useState<string[]>([
+    'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
+  ]);
+  const [customImageUrl, setCustomImageUrl] = useState('');
+
   // Supported Celebrations & Add-on Services
   const [supportedCelebrations, setSupportedCelebrations] = useState<string[]>([
     'WEDDING',
@@ -203,6 +225,37 @@ export default function AddServiceScreen() {
     } else {
       setSupportedCelebrations([...supportedCelebrations, celebId]);
     }
+  };
+
+  const handleAddCustomImage = () => {
+    const trimmed = customImageUrl.trim();
+    if (!trimmed) return;
+    if (images.includes(trimmed)) {
+      setAlertConfig({ visible: true, type: 'info', title: 'Already Added', message: 'This image is already in your gallery.' });
+      return;
+    }
+    setImages([...images, trimmed]);
+    setCustomImageUrl('');
+  };
+
+  const handleTogglePresetImage = (url: string) => {
+    if (images.includes(url)) {
+      if (images.length === 1) {
+        setAlertConfig({ visible: true, type: 'warning', title: 'Photo Required', message: 'Please keep at least one photo for your listing.' });
+        return;
+      }
+      setImages(images.filter((img) => img !== url));
+    } else {
+      setImages([...images, url]);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    if (images.length === 1) {
+      setAlertConfig({ visible: true, type: 'warning', title: 'Photo Required', message: 'Please keep at least one photo for your listing.' });
+      return;
+    }
+    setImages(images.filter((_, i) => i !== index));
   };
 
   const handleAddAddon = () => {
@@ -416,6 +469,7 @@ export default function AddServiceScreen() {
         celebrationPricing: parsedCelebPricing,
         amenitiesPolicy,
         addOnServices,
+        images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'],
       };
 
       let savedService: PartnerServiceItem | null = null;
@@ -457,7 +511,7 @@ export default function AddServiceScreen() {
               availableCities: payload.availableCities,
               packages: payload.packages,
               capacity: b.capacity || payload.capacity,
-              images: b.images || ['https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'],
+              images: (b.images && b.images.length > 0) ? b.images : images,
               documents: b.documents || [],
               features: b.features || payload.features,
               location: b.location || payload.location,
@@ -500,7 +554,7 @@ export default function AddServiceScreen() {
           availableCities: payload.availableCities,
           packages: payload.packages,
           capacity: payload.capacity,
-          images: ['https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'],
+          images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'],
           documents: [],
           features: payload.features,
           location: payload.location,
@@ -599,6 +653,77 @@ export default function AddServiceScreen() {
           value={subCategory}
           onChangeText={setSubCategory}
         />
+
+        {/* ==================================================== */}
+        {/* SERVICE PHOTOS & MEDIA GALLERY */}
+        {/* ==================================================== */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 }}>
+          <Text style={styles.sectionHeader}>Service Photos & Media *</Text>
+          <View style={styles.photoCountBadge}>
+            <Camera size={13} color="#38bdf8" />
+            <Text style={styles.photoCountText}>{images.length} Photo{images.length > 1 ? 's' : ''}</Text>
+          </View>
+        </View>
+        <Text style={styles.sectionSub}>Add authentic photos of your banquet hall, lawn, decor, food buffet & setups</Text>
+
+        {/* Horizontal Photo Thumbnail Preview */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoThumbScroll}>
+          {images.map((imgUri, idx) => (
+            <View key={idx} style={styles.photoThumbCard}>
+              <Image source={{ uri: imgUri }} style={styles.photoThumbImg} />
+              <TouchableOpacity
+                style={styles.photoDeleteBtn}
+                onPress={() => handleRemoveImage(idx)}
+                activeOpacity={0.8}
+              >
+                <X size={12} color="#ffffff" />
+              </TouchableOpacity>
+              <View style={styles.photoIndexBadge}>
+                <Text style={styles.photoIndexText}>{idx + 1}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Quick-Add Curated Presets */}
+        <Text style={[styles.label, { marginTop: 12, marginBottom: 6 }]}>Tap to Add Verified Photo Presets:</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+          {PHOTO_PRESETS.map((preset, pIdx) => {
+            const isAdded = images.includes(preset.url);
+            return (
+              <TouchableOpacity
+                key={pIdx}
+                style={[styles.presetChip, isAdded && styles.presetChipActive]}
+                onPress={() => handleTogglePresetImage(preset.url)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.presetChipText, isAdded && styles.presetChipTextActive]}>
+                  {isAdded ? `✓ ${preset.label}` : `+ ${preset.label}`}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Custom Image URL Input */}
+        <View style={styles.photoUrlInputRow}>
+          <TextInput
+            style={[styles.input, { flex: 1, marginBottom: 0 }]}
+            placeholder="Paste Photo URL (https://...)"
+            placeholderTextColor="#64748b"
+            value={customImageUrl}
+            onChangeText={setCustomImageUrl}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity
+            style={styles.addPhotoUrlBtn}
+            onPress={handleAddCustomImage}
+            activeOpacity={0.8}
+          >
+            <Plus size={16} color="#ffffff" />
+            <Text style={styles.addPhotoUrlBtnText}>Add</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* ==================================================== */}
         {/* SUPPORTED CELEBRATION TYPES (Weddings, Birthdays, etc.) */}
@@ -1620,4 +1745,79 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   submitBtnText: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
+  photoCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0c2242',
+    borderWidth: 1,
+    borderColor: '#38bdf8',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  photoCountText: { fontSize: 11, fontWeight: '700', color: '#38bdf8' },
+  photoThumbScroll: { marginTop: 8, marginBottom: 4 },
+  photoThumbCard: {
+    width: 120,
+    height: 85,
+    borderRadius: 12,
+    marginRight: 10,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    backgroundColor: '#070a12',
+  },
+  photoThumbImg: { width: '100%', height: '100%', borderRadius: 12 },
+  photoDeleteBtn: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoIndexBadge: {
+    position: 'absolute',
+    bottom: 5,
+    left: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  photoIndexText: { fontSize: 10, fontWeight: '800', color: '#ffffff' },
+  presetChip: {
+    backgroundColor: '#0b1322',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  presetChipActive: { backgroundColor: '#0c2242', borderColor: '#38bdf8' },
+  presetChipText: { fontSize: 11, fontWeight: '600', color: '#94a3b8' },
+  presetChipTextActive: { color: '#38bdf8', fontWeight: '800' },
+  photoUrlInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  addPhotoUrlBtn: {
+    backgroundColor: '#0284c7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  addPhotoUrlBtnText: { fontSize: 13, fontWeight: '700', color: '#ffffff' },
 });
