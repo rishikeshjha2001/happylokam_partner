@@ -484,29 +484,26 @@ export default function BookingDetailsScreen() {
           </View>
         </View>
 
-        {/* Customer Information Card */}
+        {/* Customer Information Card (Name & Date visible to Partner; Phone & Email protected for Admin only) */}
         <View style={styles.card}>
-          <Text style={styles.cardHeaderTitle}>Customer Contact Details</Text>
+          <Text style={styles.cardHeaderTitle}>Customer Profile</Text>
           <View style={styles.customerRow}>
             <View style={styles.avatarBox}>
               <User size={24} color="#ffffff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.customerName}>{booking.user?.name || 'Customer'}</Text>
-              <Text style={styles.customerEmail}>{booking.user?.email || 'customer@happylokam.com'}</Text>
-              <Text style={styles.customerPhone}>{booking.user?.phone || 'No phone provided'}</Text>
+              <Text style={styles.customerName}>{booking.user?.name || (booking as any).customerName || 'Customer'}</Text>
+              <Text style={{ fontSize: 12, color: '#38bdf8', marginTop: 2, fontWeight: '700' }}>
+                📅 Reservation Date: {booking.bookingDate || booking.date}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.contactActionRow}>
-            <TouchableOpacity style={styles.callBtn} activeOpacity={0.85} onPress={handleCall}>
-              <Phone size={16} color="#ffffff" />
-              <Text style={styles.callBtnText}>Call Customer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.whatsappBtn} activeOpacity={0.85} onPress={handleWhatsApp}>
-              <MessageSquare size={16} color="#34d399" />
-              <Text style={styles.whatsappBtnText}>WhatsApp</Text>
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#090d16', padding: 12, borderRadius: 12, marginTop: 14, borderWidth: 1, borderColor: '#1e293b' }}>
+            <ShieldCheck size={18} color="#34d399" />
+            <Text style={{ fontSize: 11, color: '#94a3b8', flex: 1, lineHeight: 16 }}>
+              Customer phone & email are protected by HappyLokam privacy policy (Admin View Only).
+            </Text>
           </View>
         </View>
 
