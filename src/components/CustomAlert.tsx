@@ -295,7 +295,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   backdropOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(3, 7, 18, 0.85)',
   },
   modalCard: {

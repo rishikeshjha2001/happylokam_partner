@@ -252,25 +252,50 @@ export default function BookingDetailsScreen() {
       const session = await PartnerDatabase.getSession();
       if (session?.token) {
         try {
-          const res = await fetch(`${PARTNER_API}/bookings/${booking.id}/status`, {
-            method: 'PUT',
+          // Primary: Call dedicated verify-completion-otp endpoint
+          let res = await fetch(`${PARTNER_API}/bookings/verify-completion-otp`, {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${session.token}`,
             },
-            body: JSON.stringify({ status: 'COMPLETED', otp: enteredOtp }),
+            body: JSON.stringify({ bookingId: booking.id, completionOtp: enteredOtp.trim() }),
           });
-          const json = await res.json();
+          let json = await res.json();
+
+          // Fallback to status update endpoint if needed
+          if (!json.success) {
+            res = await fetch(`${PARTNER_API}/bookings/${booking.id}/status`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session.token}`,
+              },
+              body: JSON.stringify({ status: 'COMPLETED', otp: enteredOtp.trim(), completionOtp: enteredOtp.trim() }),
+            });
+            json = await res.json();
+          }
+
           if (json.success && json.data) {
             setBooking(json.data);
             await PartnerDatabase.updateBooking(json.data);
             setProcessing(false);
             setOtpModalVisible(false);
+            const payoutStr = json.payoutAmount ? `₹${json.payoutAmount.toLocaleString('en-IN')}` : `₹${partnerNetEarnings.toLocaleString('en-IN')}`;
             setAlertConfig({
               visible: true,
               type: 'success',
-              title: 'Service Completed! 🌟',
-              message: `Booking #${booking.ticketId || booking.id} marked as completed. The booking has been successfully finalized.`,
+              title: 'Celebration Completed & Payout Unlocked! 🌟',
+              message: `Booking #${booking.ticketId || booking.id} has been verified and marked COMPLETED. Payout of ${payoutStr} has been credited to your settlement wallet.`,
+            });
+            return;
+          } else {
+            setProcessing(false);
+            setAlertConfig({
+              visible: true,
+              type: 'error',
+              title: 'Verification Failed',
+              message: json.error || 'Invalid Completion OTP. Please ask customer to provide the 4-digit code shown on their booking pass.',
             });
             return;
           }

@@ -45,14 +45,20 @@ import PartnerDatabase, { PartnerServiceItem, PartnerServicePackage, PartnerAddO
 import CustomAlert from '../components/CustomAlert';
 
 export const CELEBRATION_TYPES = [
-  { id: 'WEDDING', label: '💍 Wedding & Engagement', icon: '💍' },
-  { id: 'BIRTHDAY', label: '🎂 Birthday & Milestone Party', icon: '🎂' },
-  { id: 'OFFICE_EVENTS', label: '🏢 Corporate & Office Events', icon: '🏢' },
-  { id: 'ANNIVERSARY', label: '🥂 Anniversary & Romance', icon: '🥂' },
-  { id: 'COCKTAIL_PARTY', label: '🎶 Cocktail & Social Night', icon: '🎶' },
-  { id: 'FESTIVE', label: '🌸 Festive & Religious Puja', icon: '🌸' },
-  { id: 'REUNION', label: '🎓 Farewell & Reunion', icon: '🎓' },
-  { id: 'BABY_SHOWER', label: '👶 Baby Shower & Naming', icon: '👶' },
+  { id: 'BACHELOR_PARTY', label: '🕺 Bachelor / Bachelorette Party', icon: '🕺' },
+  { id: 'KITTY_PARTY', label: '🐱 Kitty Party', icon: '🐱' },
+  { id: 'POOL_PARTY', label: '🏊 Pool Party', icon: '🏊' },
+  { id: 'HALDI_SANGEET', label: '💛 Haldi & Sangeet', icon: '💛' },
+  { id: 'WEDDING', label: '💍 Wedding & Reception', icon: '💍' },
+  { id: 'BIRTHDAY', label: '🎂 Birthday Party', icon: '🎂' },
+  { id: 'ANNIVERSARY', label: '🥂 Anniversary Celebration', icon: '🥂' },
+  { id: 'ROMANTIC_DATE', label: '🌹 Romantic Date / Proposal', icon: '🌹' },
+  { id: 'BABY_SHOWER', label: '👶 Baby Shower & Godh Bharai', icon: '👶' },
+  { id: 'NAMING_CEREMONY', label: '🪔 Naming Ceremony', icon: '🪔' },
+  { id: 'OFFICE_EVENTS', label: '🏢 Corporate / Office Events', icon: '🏢' },
+  { id: 'COCKTAIL_PARTY', label: '🍸 Cocktail & DJ Night', icon: '🍸' },
+  { id: 'FESTIVE', label: '🌸 Festive Puja / Katha', icon: '🌸' },
+  { id: 'REUNION', label: '🎓 Reunion & Farewell', icon: '🎓' },
 ];
 
 const CATEGORIES = [
